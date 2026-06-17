@@ -1,109 +1,118 @@
-# SecureVault-Dashboard
-This challenge is designed to test your ability to bridge Computer Science fundamentals with Modern Frontend Engineering.
+# SecureVault Dashboard
 
-## 1. Business Scenario & Context
-**Client:** SecureVault Inc.  
-**Industry:** Enterprise Cloud Security  
+SecureVault Dashboard is a dark-mode enterprise cloud security file explorer built for SecureVault Inc. It presents nested legal, finance, security, and shared resource records in a fast, keyboard-accessible interface that can scale from shallow folders to deeply nested case archives.
 
-**The Problem:** SecureVault offers high-security cloud storage for law firms and banks. Their backend engineers have built a robust API that returns folder structures efficiently. However, their current frontend is a simple list that is hard to navigate. Clients are complaining that they can't manage nested files easily.
+## Business Problem
 
-**Your Role:** You are the incoming Junior Frontend Engineer. Your task is to design and build a modern, high-performance "File Explorer" UI that impresses the CTO and the Design Lead.
+SecureVault customers in legal and banking environments need to inspect sensitive file structures without losing context. A flat file list makes it easy to miss nested evidence, reference the wrong version, or copy an incomplete path into a legal or compliance workflow. This dashboard solves that by combining a recursive tree, metadata inspection, search, and exact path copying.
 
----
+## Tech Stack
 
-## 2. The Assignment Stages
-This is a **hybrid design/engineering challenge**. You are expected to demonstrate competence in both visual design logic and algorithmic frontend implementation.
+- React
+- TypeScript
+- Vite
+- Custom CSS
+- No Bootstrap, Material UI, Chakra UI, Ant Design, or component library
 
-### Phase 1: The Design System
-**Before writing code, you must design the interface.**
+## Setup Instructions
 
-* **Deliverable:** A link to a design file (Figma, Penpot, or Sketch) or a PDF export of your design frames.
-* **Requirement:** Your design file must include a dedicated **"Design System" page** that defines:
-    * **Typography Scale**
-    * **Color Palette** 
-    * **Spacing Grid**
-    * **Component States**
-* **Brand Guidelines:** SecureVault wants a "Dark Mode" aesthetic that feels "cyber-secure, precise, and fast."
+```bash
+npm install
+npm run dev
+```
 
-### Phase 2: The Implementation 
-**Build the application using the design system you created in Phase 1.**
+Open the local app at:
 
-* **Constraint:** You **cannot** use component libraries like Bootstrap, Material UI, Chakra UI, or Ant Design. You must build your components from scratch to prove you understand CSS layout and component abstraction.
-* **Note:** CSS frameworks like Tailwind are allowed *only* if you use them to build your own reusable component architecture.
+```text
+http://127.0.0.1:5173/
+```
 
----
+Do not open `index.html` directly from the file system. Vite needs to serve the React, TypeScript, and JSON modules during development.
 
-## 3. User Stories & Acceptance Criteria
+For a production check:
 
-### Core Features (Required)
+```bash
+npm run build
+```
 
-#### Story 1: The Recursive Tree
-> "As a lawyer with 10 years of case files, I need to navigate deeply nested folders without reloading the page."
+## Links
 
-* **AC 1:** The UI renders the folder structure from the provided JSON.
-* **AC 2:** The component structure must be **recursive**. It should handle 2 levels of depth or 20 levels without breaking the UI.
-* **AC 3:** Folders must expand/collapse on click.
+- Design file: `TODO: Add Figma/Penpot/PDF link here`
+- Live demo: `TODO: Add deployed demo link here`
 
-#### Story 2: File Details & Inspection
-> "As a user, I need to see file metadata to ensure I'm opening the right version."
+## Data Source
 
-* **AC 1:** Clicking a file "selects" it (distinct visual state based on your design).
-* **AC 2:** A "Properties Panel" displays the selected file's Name, Type, and Size.
+The app uses the provided `data.json` structure exactly: every node keeps its `id`, `name`, `type`, optional `children`, and optional `size` fields. A matching copy lives at `src/data/data.json` so Vite can import it directly from the application source without changing the JSON shape.
 
-#### Story 3: Keyboard Accessibility
-> "As a power user, I hate reaching for my mouse. I want to navigate the vault using only my keyboard."
+## Features
 
-* **AC 1:** `Up/Down` arrows move focus between the visible items in the explorer.
-* **AC 2:** `Right` arrow expands a folder; `Left` arrow collapses it.
-* **AC 3:** `Enter` selects the file.
+- Recursive file and folder tree using the provided `data.json` structure
+- Expand and collapse folders on click
+- File selection with a clear selected state
+- Right-side properties panel with name, type, size, and full path
+- Keyboard navigation with ArrowUp, ArrowDown, ArrowRight, ArrowLeft, and Enter
+- Accessible tree roles and states with `role="tree"`, `role="treeitem"`, `aria-expanded`, and `aria-selected`
+- Breadcrumb path bar for the selected file
+- Copy path button with a "Path copied" confirmation
+- Search and filter across folders and files
+- 300ms debounced search input to avoid recursive filtering on every keystroke
+- Deep search results automatically reveal parent folders
+- Responsive layout for desktop, tablet, and mobile
 
-### The "Wildcard" Feature (Required)
+## Recursive Strategy
 
-#### Story 4: The Innovation Clause
-> "As a developer, I want to add one feature that the client didn't ask for, but would significantly improve the user experience."
+The explorer is powered by `TreeNode.tsx`, a recursive component. Each `TreeNode` renders one file or folder. When the node is a folder and its `id` exists in the expanded set, the component maps over `children` and renders more `TreeNode` instances. Because each level repeats the same component contract, the tree can handle two levels or twenty levels without special-case layout logic.
 
-* **Task:** Identify a gap in the requirements. What is missing?
-* **AC 1:** Implement **one** additional feature of your choice.
-* **AC 2:** In your README, explain *why* you chose this feature and how it adds value to the business.
+Tree utilities in `src/utils/treeUtils.ts` keep the data work separate from rendering. They flatten only the currently visible nodes for keyboard navigation, find a selected file path by walking the tree, count files and folders for the dashboard summary, and filter the tree for search while preserving the original JSON shape.
 
-### Bonus Feature (Optional)
-#### Story 5: Search & Filter
-* **AC 1:** A search bar filters the view. Matching items deep inside folders should force those folders to expand automatically.
+## Search Strategy
 
----
+The search input uses two pieces of state: the immediate input value and a 300ms debounced query. The input stays responsive on every keystroke, but the recursive `filterTreeByQuery` utility only runs after the user pauses typing. This keeps the implementation easy to reason about while avoiding unnecessary recursive tree work on large vault structures.
 
-## 4. Technical Requirements
-* **Data:** Use the `data.json` file provided in this repo. Do not edit the JSON structure, but you may add more items to test performance.
-* **Tech Stack:** React, Vue, Svelte, or Vanilla JS.
-* **Documentation:** Your README in the submission must include:
-    1.  Setup instructions.
-    2.  Link to your Design File.
-    3.  Explanation of your **Recursive Strategy** (how you managed the data structure).
-    4.  Explanation of your **Wildcard Feature**.
+## Keyboard Accessibility
 
----
+The explorer uses a roving focus model:
 
-## 5. Submission Instructions
-1.  **Fork** this repository.
-2.  Complete the code in your fork.
-3.  **Update the README:**
-    * **Delete** all the instructions in this file (the text you are reading now).
-    * **Replace** them with your own documentation as outlined in Section 4.
-    * *Note: Do not append your docs to the end. The final README should look like a professional project documentation, not a homework assignment.*
-4.  Submit your repo link via the [online](https://forms.office.com/e/G6vaRQxWYM) form.
+- `ArrowDown` moves focus to the next visible item.
+- `ArrowUp` moves focus to the previous visible item.
+- `ArrowRight` expands a focused folder.
+- `ArrowLeft` collapses a focused folder. If the focused item is already collapsed or is a file, focus moves to the parent folder.
+- `Enter` selects the focused file.
+- `Space` toggles or selects the focused row for users who expect button-like behavior.
 
----
-### ⚠️ CRITICAL: Pre-Submission Checklist
+Only visible rows are included in keyboard movement, so collapsed children are skipped until their parent folder is expanded.
 
-**STOP and review your work.** To be eligible for the Solution Defense interview, your submission **MUST** pass the following "Gatekeeper" checks.
+## Wildcard Feature: Breadcrumb Path and Copy Path
 
-If any of the following are incorrect, your submission will be flagged as incomplete and you will **NOT** be invited for an interview.
+The required wildcard feature is a breadcrumb path bar with a copy action. Legal and banking users often need to reference exact file locations in case notes, audit logs, or compliance tickets. Showing the full path and copying it directly reduces the risk of opening, citing, or sending the wrong file path. After copying, the interface confirms the action with a small "Path copied" status message.
 
-1.  **Public Repository:** Is your GitHub repository set to **Public**? (Private links will be auto-rejected).
-2.  **Audit-Ready History:** Does your Git commit history show your progress over time? (Repositories with a single "Initial Commit" or "Upload files" containing the entire project will be **rejected as unverifiable**).
-3.  **Working Deployment:** Have you tested your live link in an **Incognito/Private** window to ensure it loads without errors?
-4.  **No Restricted Libraries:** Did you build your own components? (Submissions using **Bootstrap, Material UI, or Chakra UI** will be disqualified).
-5.  **Design File Access:** Is your Figma/Penpot link included and set to **"Anyone with the link can view"**?
-6.  **Documentation:** Have you deleted the original assignment text from the `README.md` and replaced it with your own project documentation?
+## Project Structure
 
-> **By submitting your work, you acknowledge that failure to meet these criteria effectively ends your application process.**
+```text
+src/
+  components/
+    FileExplorer/
+      BreadcrumbBar.tsx
+      EmptyState.tsx
+      FileExplorer.tsx
+      PropertiesPanel.tsx
+      SearchBar.tsx
+      TreeNode.tsx
+  data/
+    data.json
+  utils/
+    treeUtils.ts
+  App.tsx
+  main.tsx
+  styles.css
+docs/
+  design-system.md
+```
+
+## Future Improvements
+
+- Add file preview support for safe document inspection.
+- Add persisted expanded folders and selected files per user session.
+- Add role-based permission badges for regulated teams.
+- Add virtualized rendering for very large enterprise vaults.
+- Add audit logging for file path copies and file selections.
