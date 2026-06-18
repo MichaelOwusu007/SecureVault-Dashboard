@@ -2,6 +2,8 @@
 
 SecureVault uses a dark enterprise interface tuned for fast scanning, keyboard use, and high-confidence file inspection in legal and banking workflows.
 
+Dark mode is the default assessment theme. A compact top-right toggle provides a light mode variant for reviewers while preserving the same spacing, hierarchy, and component states.
+
 ## Typography Scale
 
 The type stack is `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif`.

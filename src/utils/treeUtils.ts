@@ -37,6 +37,13 @@ export type RemovedFileResult = {
   parentIds: string[];
 };
 
+export type RenameFileResult = {
+  nodes: SecureVaultNode[];
+  renamedFile: FileNode | null;
+  pathSegments: string[] | null;
+  parentIds: string[];
+};
+
 export type TrashedFileItem = {
   id: string;
   file: FileNode;
@@ -267,18 +274,53 @@ export function removeFileById(
   return null;
 }
 
-export function renameFileById(nodes: SecureVaultNode[], fileId: string, nextName: string): SecureVaultNode[] {
-  return nodes.map((node) => {
+export function renameFileById(
+  nodes: SecureVaultNode[],
+  fileId: string,
+  requestedName: string,
+  pathSegments: string[] = [],
+  parentIds: string[] = [],
+): RenameFileResult {
+  let renamedFile: FileNode | null = null;
+  let renamedPathSegments: string[] | null = null;
+  let renamedParentIds: string[] = [];
+
+  const nextNodes = nodes.map((node) => {
     if (isFile(node) && node.id === fileId) {
-      return { ...node, name: nextName };
+      const siblingNodes = nodes.filter((sibling) => sibling.id !== fileId);
+      const uniqueName = getUniqueNodeName(siblingNodes, requestedName);
+      renamedFile = { ...node, name: uniqueName };
+      renamedPathSegments = [...pathSegments, uniqueName];
+      renamedParentIds = parentIds;
+      return renamedFile;
     }
 
     if (isFolder(node)) {
-      return { ...node, children: renameFileById(node.children, fileId, nextName) };
+      const childResult = renameFileById(
+        node.children,
+        fileId,
+        requestedName,
+        [...pathSegments, node.name],
+        [...parentIds, node.id],
+      );
+
+      if (childResult.renamedFile) {
+        renamedFile = childResult.renamedFile;
+        renamedPathSegments = childResult.pathSegments;
+        renamedParentIds = childResult.parentIds;
+        return { ...node, children: childResult.nodes };
+      }
     }
 
     return node;
   });
+
+  return {
+    nodes: nextNodes,
+    renamedFile,
+    pathSegments: renamedPathSegments,
+    parentIds: renamedParentIds,
+  };
 }
 
 export function getTopLevelFolderIds(nodes: SecureVaultNode[]): Set<string> {

@@ -37,8 +37,10 @@ npm run build
 
 ## Links
 
-- Design file: `TODO: Add Figma/Penpot/PDF link here`
+- Design file: [SecureVault Dashboard Design](https://www.figma.com/design/iA1tcbISYFbptXL0SZdFzN/SecureVault-Dashboard-Design?node-id=0-1&t=w98MEa94DJI02GGe-1)
 - Live demo: `TODO: Add deployed demo link here`
+
+The Figma file was generated from the implemented SecureVault UI and organized into cover, design system, dashboard, component, interaction-state, and responsive design sections. Because the current Figma Starter plan limits the file to 3 pages, the requested dashboard, component, interaction, and mobile views are represented as editable top-level frames inside the Dashboard & Components page.
 
 ## Data Source
 
@@ -60,6 +62,7 @@ The app uses the provided `data.json` structure exactly: every node keeps its `i
 - Frontend-only Import to Vault, rename, Move to Trash, Restore, and Delete Permanently actions
 - Folder selection for choosing an import destination
 - Custom confirmation modals and toast notifications without external libraries
+- Top-right theme toggle with dark mode as the default assessment theme
 - Search and filter across folders and files
 - 300ms debounced search input to avoid recursive filtering on every keystroke
 - Deep search results automatically reveal parent folders

@@ -34,6 +34,8 @@ type PendingConfirmation =
   | { type: "delete-vault-file"; fileId: string }
   | { type: "delete-trash-file"; trashId: string };
 
+type ThemeMode = "dark" | "light";
+
 export default function App() {
   const [vaultNodes, setVaultNodes] = useState<SecureVaultNode[]>(() => initialNodes);
   const [selectedItem, setSelectedItem] = useState<SelectedNodeState | null>(null);
@@ -41,6 +43,7 @@ export default function App() {
   const [trashItems, setTrashItems] = useState<TrashedFileItem[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedNode = selectedItem?.node ?? null;
   const selectedPathSegments = selectedItem?.pathSegments ?? [];
@@ -76,6 +79,10 @@ export default function App() {
     ],
     [vaultCounts],
   );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeMode;
+  }, [themeMode]);
 
   useEffect(() => {
     if (!selectedItem) {
@@ -174,17 +181,14 @@ export default function App() {
       return;
     }
 
-    setVaultNodes((currentNodes) => renameFileById(currentNodes, fileId, trimmedName));
-    setSelectedItem((currentSelection) => {
-      if (!currentSelection || !isFile(currentSelection.node) || currentSelection.node.id !== fileId) {
-        return currentSelection;
-      }
+    const renameResult = renameFileById(vaultNodes, fileId, trimmedName);
 
-      return {
-        node: { ...currentSelection.node, name: trimmedName },
-        pathSegments: [...currentSelection.pathSegments.slice(0, -1), trimmedName],
-      };
-    });
+    if (!renameResult.renamedFile || !renameResult.pathSegments) {
+      return;
+    }
+
+    setVaultNodes(renameResult.nodes);
+    setSelectedItem({ node: renameResult.renamedFile, pathSegments: renameResult.pathSegments });
     setPathCopied(false);
     showToast("File name updated.");
   };
@@ -223,6 +227,9 @@ export default function App() {
 
     setVaultNodes(result.nodes);
     setTrashItems((currentItems) => currentItems.filter((item) => item.id !== trashId));
+    setToasts((currentToasts) =>
+      currentToasts.filter((toast) => toast.action?.trashId !== trashId),
+    );
     setSelectedItem({ node: restoredFile, pathSegments: restoredPathSegments });
     setPathCopied(false);
     showToast("File restored.");
@@ -275,6 +282,9 @@ export default function App() {
 
   const confirmTrashPermanentDelete = (trashId: string) => {
     setTrashItems((currentItems) => currentItems.filter((item) => item.id !== trashId));
+    setToasts((currentToasts) =>
+      currentToasts.filter((toast) => toast.action?.trashId !== trashId),
+    );
     setPendingConfirmation(null);
     showToast("File permanently deleted.");
   };
@@ -329,6 +339,7 @@ export default function App() {
   const importDestinationLabel = selectedFolder
     ? `Destination: ${selectedFolder.name}`
     : "Destination: Root vault";
+  const isLightMode = themeMode === "light";
 
   return (
     <div className="app-shell">
@@ -350,19 +361,33 @@ export default function App() {
             <h1>Cloud Evidence Explorer</h1>
           </div>
         </div>
-        <div className="topbar-status" aria-label="Workspace status">
-          <span>
-            <strong>Protected</strong>
-            <small>workspace</small>
-          </span>
-          <span>
-            <strong>Path audit</strong>
-            <small>ready</small>
-          </span>
-          <span>
-            <strong>Keyboard</strong>
-            <small>enabled</small>
-          </span>
+        <div className="topbar-actions">
+          <div className="topbar-status" aria-label="Workspace status">
+            <span>
+              <strong>Protected</strong>
+              <small>workspace</small>
+            </span>
+            <span>
+              <strong>Path audit</strong>
+              <small>ready</small>
+            </span>
+            <span>
+              <strong>Keyboard</strong>
+              <small>enabled</small>
+            </span>
+          </div>
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={() => setThemeMode((currentTheme) => (currentTheme === "dark" ? "light" : "dark"))}
+            aria-label={isLightMode ? "Switch to dark mode" : "Switch to light mode"}
+            aria-pressed={isLightMode}
+            title={isLightMode ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            <span className="theme-toggle__track" aria-hidden="true">
+              <span className="theme-toggle__icon" />
+            </span>
+          </button>
         </div>
       </header>
 

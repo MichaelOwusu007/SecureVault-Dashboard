@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import {
   SecureVaultNode,
-  formatDisplayDate,
   formatFullPath,
   getFileExtension,
   isFile,
@@ -93,14 +92,6 @@ export function PropertiesPanel({
             <div>
               <dt>Size</dt>
               <dd>{selectedFile.size}</dd>
-            </div>
-            <div>
-              <dt>MIME type</dt>
-              <dd>{selectedFile.mimeType || "Not available"}</dd>
-            </div>
-            <div>
-              <dt>Last modified</dt>
-              <dd>{formatDisplayDate(selectedFile.lastModified)}</dd>
             </div>
           </>
         ) : null}
