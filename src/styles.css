@@ -122,57 +122,19 @@ kbd {
 }
 
 .brand-logo {
-  position: relative;
-  display: grid;
-  width: 52px;
-  height: 52px;
+  display: inline-flex;
+  min-width: 34px;
   flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid rgba(125, 249, 214, 0.46);
-  border-radius: var(--radius);
-  background:
-    radial-gradient(circle at 50% 18%, rgba(125, 249, 214, 0.22), transparent 30%),
-    linear-gradient(145deg, rgba(0, 230, 176, 0.18), rgba(88, 166, 255, 0.08));
-  box-shadow:
-    inset 0 0 24px rgba(0, 230, 176, 0.12),
-    0 0 28px rgba(0, 230, 176, 0.12);
+  align-items: center;
+  justify-content: center;
 }
 
-.brand-logo::before,
-.brand-logo::after {
-  position: absolute;
-  background: rgba(125, 249, 214, 0.36);
-  content: "";
-}
-
-.brand-logo::before {
-  width: 26px;
-  height: 1px;
-}
-
-.brand-logo::after {
-  width: 1px;
-  height: 26px;
-}
-
-.brand-logo__shield {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  width: 28px;
-  height: 32px;
-  place-items: center;
-  background: linear-gradient(180deg, rgba(0, 230, 176, 0.92), rgba(88, 166, 255, 0.54));
-  clip-path: polygon(50% 0, 88% 14%, 80% 70%, 50% 100%, 20% 70%, 12% 14%);
-}
-
-.brand-logo__core {
-  display: block;
-  width: 9px;
-  height: 9px;
-  border: 2px solid #071011;
-  border-radius: 50%;
-  box-shadow: 0 -7px 0 -3px #071011;
+.brand-logo__letters {
+  color: var(--accent);
+  font-size: 1.32rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
 }
 
 .eyebrow {
@@ -246,7 +208,7 @@ h3 {
 .main-layout {
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: var(--space-6) var(--space-8) calc(var(--space-8) + 280px);
+  padding: var(--space-6) var(--space-8) calc(var(--space-8) + 240px);
 }
 
 .dashboard-overview {
@@ -335,9 +297,9 @@ h3 {
 
 .command-help {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
   align-content: start;
-  padding: var(--space-4);
+  padding: var(--space-3);
 }
 
 .command-help--floating {
@@ -345,7 +307,7 @@ h3 {
   right: var(--space-6);
   bottom: var(--space-6);
   z-index: 40;
-  width: min(340px, calc(100vw - 32px));
+  width: min(300px, calc(100vw - 32px));
   border-color: rgba(125, 249, 214, 0.32);
   background:
     linear-gradient(145deg, rgba(0, 230, 176, 0.1), transparent 44%),
@@ -369,10 +331,10 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  min-height: 42px;
+  min-height: 36px;
   border: 1px solid rgba(53, 84, 90, 0.6);
   border-radius: 7px;
-  padding: var(--space-2);
+  padding: 6px var(--space-2);
   background: rgba(7, 11, 12, 0.42);
   color: var(--muted-strong);
   font-weight: 800;
@@ -400,7 +362,7 @@ h3 {
 }
 
 .command-action-grid span {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
 }
 
 .command-action--wide {
@@ -959,7 +921,7 @@ h3 {
   .command-help--floating {
     right: var(--space-4);
     bottom: var(--space-4);
-    width: min(320px, calc(100vw - 24px));
+    width: min(284px, calc(100vw - 24px));
   }
 
   .node-size {

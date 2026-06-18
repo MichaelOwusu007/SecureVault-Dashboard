@@ -98,9 +98,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand-lockup" aria-label="SecureVault Inc.">
           <span className="brand-logo" aria-hidden="true">
-            <span className="brand-logo__shield">
-              <span className="brand-logo__core" />
-            </span>
+            <span className="brand-logo__letters">SV</span>
           </span>
           <div>
             <p className="eyebrow">SecureVault Inc.</p>
