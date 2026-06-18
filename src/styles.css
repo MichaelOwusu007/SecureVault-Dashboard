@@ -411,7 +411,7 @@ h3 {
   right: var(--space-6);
   bottom: var(--space-6);
   z-index: 40;
-  width: min(340px, calc(100vw - 32px));
+  width: min(360px, calc(100vw - 32px));
   border-color: rgba(125, 249, 214, 0.32);
   background:
     linear-gradient(145deg, rgba(0, 230, 176, 0.1), transparent 44%),
@@ -439,20 +439,21 @@ h3 {
 
 .command-action-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   margin: 0;
 }
 
 .command-action-grid button {
   display: flex;
+  min-width: 0;
   align-items: center;
-  justify-content: space-between;
-  gap: 4px;
+  justify-content: flex-start;
+  gap: 6px;
   min-height: 30px;
   border: 1px solid rgba(53, 84, 90, 0.6);
   border-radius: 7px;
-  padding: 4px 5px;
+  padding: 4px 7px;
   background: rgba(7, 11, 12, 0.42);
   color: var(--muted-strong);
   font-weight: 800;
@@ -480,13 +481,15 @@ h3 {
 }
 
 .command-action-grid span {
+  min-width: 0;
+  overflow: hidden;
   font-size: 0.64rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .command-action--wide {
-  grid-column: 1 / -1;
-  justify-content: center;
+  grid-column: auto;
 }
 
 .command-help--floating kbd {
