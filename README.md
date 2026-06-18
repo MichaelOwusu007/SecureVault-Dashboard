@@ -47,10 +47,13 @@ The app uses the provided `data.json` structure exactly: every node keeps its `i
 ## Features
 
 - Recursive file and folder tree using the provided `data.json` structure
+- Extension-aware icons for folders, PDF, DOCX, XLSX, PNG, and supporting file types
+- Vault summary KPI cards for total files, folders, storage used, and file type coverage
 - Expand and collapse folders on click
 - File selection with a clear selected state
 - Right-side properties panel with name, type, size, and full path
 - Keyboard navigation with ArrowUp, ArrowDown, ArrowRight, ArrowLeft, and Enter
+- Fixed command help panel with clickable controls for navigate, expand, collapse, and select
 - Accessible tree roles and states with `role="tree"`, `role="treeitem"`, `aria-expanded`, and `aria-selected`
 - Breadcrumb path bar for the selected file
 - Copy path button with a "Path copied" confirmation
@@ -69,6 +72,10 @@ Tree utilities in `src/utils/treeUtils.ts` keep the data work separate from rend
 
 The search input uses two pieces of state: the immediate input value and a 300ms debounced query. The input stays responsive on every keystroke, but the recursive `filterTreeByQuery` utility only runs after the user pauses typing. This keeps the implementation easy to reason about while avoiding unnecessary recursive tree work on large vault structures.
 
+## Visual Inspection Strategy
+
+The dashboard includes a KPI strip at the top so reviewers can immediately understand vault scale before interacting with the tree. File and folder icons are generated from the node type or file extension, making PDFs, spreadsheets, documents, images, and folders visually distinct without changing the provided JSON structure.
+
 ## Keyboard Accessibility
 
 The explorer uses a roving focus model:
@@ -81,6 +88,8 @@ The explorer uses a roving focus model:
 - `Space` toggles or selects the focused row for users who expect button-like behavior.
 
 Only visible rows are included in keyboard movement, so collapsed children are skipped until their parent folder is expanded.
+
+The fixed command help panel in the lower-right corner calls the same navigation commands as the keyboard. This makes the shortcuts discoverable while also giving reviewers a clickable way to test focus movement, expansion, collapse, and file selection.
 
 ## Wildcard Feature: Breadcrumb Path and Copy Path
 

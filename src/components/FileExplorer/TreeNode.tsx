@@ -1,5 +1,5 @@
 import { KeyboardEvent, RefCallback } from "react";
-import { SecureVaultNode, isFolder, isFile } from "../../utils/treeUtils";
+import { SecureVaultNode, getNodeIconMeta, isFolder, isFile } from "../../utils/treeUtils";
 
 type TreeNodeProps = {
   node: SecureVaultNode;
@@ -63,6 +63,7 @@ export function TreeNode({
   const expanded = folder ? expandedIds.has(node.id) : undefined;
   const selected = file && selectedFileId === node.id;
   const currentPath = [...pathSegments, node.name];
+  const iconMeta = getNodeIconMeta(node);
 
   const handleClick = () => {
     onFocusItem(node.id);
@@ -104,7 +105,9 @@ export function TreeNode({
         <span className={`tree-disclosure${expanded ? " is-expanded" : ""}`} aria-hidden="true">
           {folder ? ">" : ""}
         </span>
-        <span className={`node-icon ${folder ? "node-icon--folder" : "node-icon--file"}`} aria-hidden="true" />
+        <span className={`node-icon node-icon--${iconMeta.kind}`} aria-hidden="true">
+          {folder ? null : iconMeta.label}
+        </span>
         <span className="node-name">{renderHighlightedName(node.name, searchQuery)}</span>
         {file ? <span className="node-size">{node.size}</span> : null}
       </div>

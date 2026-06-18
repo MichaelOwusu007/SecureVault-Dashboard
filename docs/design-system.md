@@ -62,6 +62,10 @@ Panels and controls use an 8px maximum radius to keep the product precise rather
 | Collapsed | Disclosure returns to the default direction and child group is removed from the DOM |
 | Disabled | Copy path button becomes muted and non-interactive until a file is selected |
 
+## Dashboard Components
+
+Summary cards use compact KPI formatting for vault totals, storage, and file type coverage. File icons use extension-specific color tokens so users can distinguish PDFs, DOCX, XLSX, PNG, folders, and supporting files while scanning the tree. The command help panel is fixed to the lower-right viewport edge and uses real buttons that trigger the same tree commands as keyboard input.
+
 ## Accessibility Notes
 
 The explorer follows a tree pattern with `role="tree"`, recursive `role="treeitem"` nodes, `aria-expanded` on folders, `aria-selected` on selectable rows, roving `tabIndex`, and keyboard support for arrow navigation. Focus states are intentionally visible because this dashboard is designed for power users who may work without a mouse.

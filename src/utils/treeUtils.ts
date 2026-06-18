@@ -30,6 +30,15 @@ export type NodePathResult = {
 export type TreeCounts = {
   files: number;
   folders: number;
+  storageBytes: number;
+  fileTypes: Set<string>;
+};
+
+export type FileIconKind = "pdf" | "docx" | "xlsx" | "png" | "txt" | "yaml" | "svg" | "font" | "generic";
+
+export type NodeIconMeta = {
+  kind: "folder" | FileIconKind;
+  label: string;
 };
 
 export const VAULT_ROOT_LABEL = "SecureVault";
@@ -44,6 +53,93 @@ export function isFile(node: SecureVaultNode): node is FileNode {
 
 export function formatFullPath(pathSegments: string[]): string {
   return `/${[VAULT_ROOT_LABEL, ...pathSegments].join("/")}`;
+}
+
+export function getFileExtension(fileName: string): string {
+  const extension = fileName.split(".").pop();
+  return extension && extension !== fileName ? extension.toLowerCase() : "file";
+}
+
+export function getNodeIconMeta(node: SecureVaultNode): NodeIconMeta {
+  if (isFolder(node)) {
+    return { kind: "folder", label: "Folder" };
+  }
+
+  const extension = getFileExtension(node.name);
+
+  if (extension === "pdf") {
+    return { kind: "pdf", label: "PDF" };
+  }
+
+  if (extension === "docx" || extension === "doc") {
+    return { kind: "docx", label: "DOC" };
+  }
+
+  if (extension === "xlsx" || extension === "xls") {
+    return { kind: "xlsx", label: "XLS" };
+  }
+
+  if (extension === "png") {
+    return { kind: "png", label: "PNG" };
+  }
+
+  if (extension === "txt") {
+    return { kind: "txt", label: "TXT" };
+  }
+
+  if (extension === "yaml" || extension === "yml") {
+    return { kind: "yaml", label: "YML" };
+  }
+
+  if (extension === "svg") {
+    return { kind: "svg", label: "SVG" };
+  }
+
+  if (extension === "ttf" || extension === "otf" || extension === "woff" || extension === "woff2") {
+    return { kind: "font", label: "FNT" };
+  }
+
+  return { kind: "generic", label: extension.slice(0, 3).toUpperCase() };
+}
+
+export function parseFileSizeToBytes(size: string): number {
+  const match = size.trim().match(/^([\d.]+)\s*(KB|MB|GB|B)$/i);
+
+  if (!match) {
+    return 0;
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2].toUpperCase();
+
+  if (Number.isNaN(value)) {
+    return 0;
+  }
+
+  const multipliers: Record<string, number> = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+  };
+
+  return value * multipliers[unit];
+}
+
+export function formatStorage(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`;
+  }
+
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  }
+
+  if (bytes >= 1024) {
+    return `${(bytes / 1024).toFixed(1)}KB`;
+  }
+
+  return `${bytes.toFixed(0)}B`;
 }
 
 export function getTopLevelFolderIds(nodes: SecureVaultNode[]): Set<string> {
@@ -151,17 +247,25 @@ export function countNodes(nodes: SecureVaultNode[]): TreeCounts {
     (counts, node) => {
       if (isFolder(node)) {
         const childCounts = countNodes(node.children);
+        childCounts.fileTypes.forEach((fileType) => counts.fileTypes.add(fileType));
+
         return {
           files: counts.files + childCounts.files,
           folders: counts.folders + childCounts.folders + 1,
+          storageBytes: counts.storageBytes + childCounts.storageBytes,
+          fileTypes: counts.fileTypes,
         };
       }
+
+      counts.fileTypes.add(getFileExtension(node.name));
 
       return {
         files: counts.files + 1,
         folders: counts.folders,
+        storageBytes: counts.storageBytes + parseFileSizeToBytes(node.size),
+        fileTypes: counts.fileTypes,
       };
     },
-    { files: 0, folders: 0 },
+    { files: 0, folders: 0, storageBytes: 0, fileTypes: new Set<string>() },
   );
 }

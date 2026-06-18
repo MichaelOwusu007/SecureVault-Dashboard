@@ -2,6 +2,7 @@ import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from
 import {
   FileNode,
   SecureVaultNode,
+  VisibleTreeItem,
   collectFolderIds,
   filterTreeByQuery,
   findNodePath,
@@ -19,6 +20,15 @@ type FileExplorerProps = {
   selectedFile: FileNode | null;
   onFileSelect: (file: FileNode, pathSegments: string[]) => void;
 };
+
+type ExplorerCommand = "previous" | "next" | "expand" | "collapse" | "select";
+
+function getVisibleIndex(items: VisibleTreeItem[], focusedId: string | null) {
+  return Math.max(
+    0,
+    items.findIndex((item) => item.node.id === focusedId),
+  );
+}
 
 export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorerProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => getTopLevelFolderIds(nodes));
@@ -55,6 +65,17 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
     [filteredNodes, effectiveExpandedIds],
   );
 
+  const currentIndex = visibleItems.length ? getVisibleIndex(visibleItems, focusedId) : -1;
+  const focusedItem = currentIndex >= 0 ? visibleItems[currentIndex] : null;
+  const focusedNode = focusedItem?.node ?? null;
+  const focusedNodeIsFolder = focusedNode ? isFolder(focusedNode) : false;
+  const focusedNodeIsFile = focusedNode ? isFile(focusedNode) : false;
+  const canExpand =
+    Boolean(focusedNode && focusedNodeIsFolder) && !effectiveExpandedIds.has(focusedNode?.id ?? "");
+  const canCollapse =
+    Boolean(focusedItem?.parentId) ||
+    (Boolean(focusedNode && focusedNodeIsFolder) && effectiveExpandedIds.has(focusedNode?.id ?? ""));
+
   useEffect(() => {
     if (!visibleItems.length) {
       setFocusedId(null);
@@ -85,6 +106,14 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
     },
     [],
   );
+
+  const focusTreeItem = useCallback((nodeId: string) => {
+    shouldMoveFocusRef.current = true;
+    setFocusedId(nodeId);
+    window.requestAnimationFrame(() => {
+      itemRefs.current.get(nodeId)?.focus({ preventScroll: true });
+    });
+  }, []);
 
   const toggleFolder = useCallback((nodeId: string) => {
     setExpandedIds((currentExpandedIds) => {
@@ -118,58 +147,92 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
     }
   };
 
+  const runExplorerCommand = useCallback(
+    (command: ExplorerCommand) => {
+      if (!visibleItems.length) {
+        return;
+      }
+
+      const index = getVisibleIndex(visibleItems, focusedId);
+      const currentItem = visibleItems[index];
+      const currentNode = currentItem.node;
+
+      if (command === "next") {
+        focusTreeItem(visibleItems[Math.min(index + 1, visibleItems.length - 1)].node.id);
+        return;
+      }
+
+      if (command === "previous") {
+        focusTreeItem(visibleItems[Math.max(index - 1, 0)].node.id);
+        return;
+      }
+
+      if (command === "expand" && isFolder(currentNode)) {
+        expandFolder(currentNode.id);
+        focusTreeItem(currentNode.id);
+        return;
+      }
+
+      if (command === "collapse") {
+        if (isFolder(currentNode) && effectiveExpandedIds.has(currentNode.id)) {
+          collapseFolder(currentNode.id);
+          focusTreeItem(currentNode.id);
+          return;
+        }
+
+        if (currentItem.parentId) {
+          focusTreeItem(currentItem.parentId);
+        }
+
+        return;
+      }
+
+      if (command === "select" && isFile(currentNode)) {
+        const pathResult = findNodePath(nodes, currentNode.id);
+        onFileSelect(currentNode, pathResult?.pathSegments ?? currentItem.pathSegments);
+        focusTreeItem(currentNode.id);
+      }
+    },
+    [
+      collapseFolder,
+      effectiveExpandedIds,
+      expandFolder,
+      focusTreeItem,
+      focusedId,
+      nodes,
+      onFileSelect,
+      visibleItems,
+    ],
+  );
+
   const handleKeyboardNavigation = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!visibleItems.length) {
       return;
     }
 
-    const currentIndex = Math.max(
-      0,
-      visibleItems.findIndex((item) => item.node.id === focusedId),
-    );
-    const focusedItem = visibleItems[currentIndex];
-
     switch (event.key) {
-      case "ArrowDown": {
+      case "ArrowDown":
         event.preventDefault();
-        const nextItem = visibleItems[Math.min(currentIndex + 1, visibleItems.length - 1)];
-        shouldMoveFocusRef.current = true;
-        setFocusedId(nextItem.node.id);
+        runExplorerCommand("next");
         break;
-      }
-      case "ArrowUp": {
+      case "ArrowUp":
         event.preventDefault();
-        const previousItem = visibleItems[Math.max(currentIndex - 1, 0)];
-        shouldMoveFocusRef.current = true;
-        setFocusedId(previousItem.node.id);
+        runExplorerCommand("previous");
         break;
-      }
-      case "ArrowRight": {
-        if (isFolder(focusedItem.node) && !effectiveExpandedIds.has(focusedItem.node.id)) {
+      case "ArrowRight":
+        event.preventDefault();
+        runExplorerCommand("expand");
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        runExplorerCommand("collapse");
+        break;
+      case "Enter":
+        if (focusedNodeIsFile) {
           event.preventDefault();
-          expandFolder(focusedItem.node.id);
+          runExplorerCommand("select");
         }
         break;
-      }
-      case "ArrowLeft": {
-        if (isFolder(focusedItem.node) && effectiveExpandedIds.has(focusedItem.node.id)) {
-          event.preventDefault();
-          collapseFolder(focusedItem.node.id);
-        } else if (focusedItem.parentId) {
-          event.preventDefault();
-          shouldMoveFocusRef.current = true;
-          setFocusedId(focusedItem.parentId);
-        }
-        break;
-      }
-      case "Enter": {
-        if (isFile(focusedItem.node)) {
-          event.preventDefault();
-          const pathResult = findNodePath(nodes, focusedItem.node.id);
-          onFileSelect(focusedItem.node, pathResult?.pathSegments ?? focusedItem.pathSegments);
-        }
-        break;
-      }
       default:
         break;
     }
@@ -217,6 +280,61 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
           <EmptyState query={debouncedSearchQuery} />
         )}
       </div>
+
+      <aside className="command-help command-help--floating" aria-label="Keyboard command controls">
+        <div className="command-help__header">
+          <p className="eyebrow">Command help</p>
+          <h2>Keyboard flow</h2>
+        </div>
+        <div className="command-action-grid">
+          <button
+            type="button"
+            onClick={() => runExplorerCommand("previous")}
+            disabled={currentIndex <= 0}
+            aria-label="Move focus to previous visible item"
+          >
+            <kbd aria-hidden="true">&uarr;</kbd>
+            <span>Navigate</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => runExplorerCommand("next")}
+            disabled={currentIndex < 0 || currentIndex >= visibleItems.length - 1}
+            aria-label="Move focus to next visible item"
+          >
+            <kbd aria-hidden="true">&darr;</kbd>
+            <span>Navigate</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => runExplorerCommand("expand")}
+            disabled={!canExpand}
+            aria-label="Expand focused folder"
+          >
+            <kbd aria-hidden="true">&rarr;</kbd>
+            <span>Expand</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => runExplorerCommand("collapse")}
+            disabled={!canCollapse}
+            aria-label="Collapse focused folder or move to parent folder"
+          >
+            <kbd aria-hidden="true">&larr;</kbd>
+            <span>Collapse</span>
+          </button>
+          <button
+            type="button"
+            className="command-action--wide"
+            onClick={() => runExplorerCommand("select")}
+            disabled={!focusedNodeIsFile}
+            aria-label="Select focused file"
+          >
+            <kbd aria-hidden="true">Enter</kbd>
+            <span>Select</span>
+          </button>
+        </div>
+      </aside>
     </section>
   );
 }
