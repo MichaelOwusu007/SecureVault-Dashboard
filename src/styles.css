@@ -1436,8 +1436,9 @@ h3 {
   }
 
   .topbar-actions {
-    align-items: flex-start;
-    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .workspace-grid {
@@ -1579,6 +1580,11 @@ h3 {
   .command-help--floating .command-action--wide {
     grid-column: auto;
     min-width: 56px;
+  }
+
+  .command-help--floating .command-action--wide kbd {
+    min-width: 42px;
+    padding: 2px 5px;
   }
 
   .toast-region {
