@@ -1418,6 +1418,60 @@ h3 {
   background: #ffffff;
 }
 
+[data-theme="light"] .import-button,
+[data-theme="light"] .vault-action-button {
+  border-color: rgba(0, 125, 102, 0.42);
+  background: rgba(0, 125, 102, 0.1);
+  color: #064e3b;
+}
+
+[data-theme="light"] .import-button:hover,
+[data-theme="light"] .vault-action-button:hover {
+  border-color: var(--accent);
+  background: rgba(0, 125, 102, 0.16);
+  color: #06382f;
+}
+
+[data-theme="light"] .secondary-action {
+  border-color: rgba(37, 99, 235, 0.38);
+  background: rgba(37, 99, 235, 0.1);
+  color: #1e3a8a;
+}
+
+[data-theme="light"] .secondary-action:hover {
+  border-color: var(--blue);
+  background: rgba(37, 99, 235, 0.16);
+  color: #172554;
+}
+
+[data-theme="light"] .vault-action-button--danger {
+  border-color: rgba(192, 38, 74, 0.42);
+  background: rgba(192, 38, 74, 0.1);
+  color: #9f1239;
+}
+
+[data-theme="light"] .vault-action-button--danger:hover {
+  border-color: var(--danger);
+  background: rgba(192, 38, 74, 0.16);
+  color: #7f1233;
+}
+
+[data-theme="light"] .trash-item__actions button {
+  color: #006b58;
+}
+
+[data-theme="light"] .trash-item__actions button:hover {
+  color: #06382f;
+}
+
+[data-theme="light"] .danger-text-button {
+  color: #9f1239;
+}
+
+[data-theme="light"] .danger-text-button:hover {
+  color: #7f1233;
+}
+
 [data-theme="light"] kbd {
   background: rgba(255, 255, 255, 0.86);
 }
