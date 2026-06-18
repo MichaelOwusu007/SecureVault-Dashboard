@@ -35,6 +35,24 @@ type PendingConfirmation =
   | { type: "delete-trash-file"; trashId: string };
 
 type ThemeMode = "dark" | "light";
+const THEME_STORAGE_KEY = "securevault-theme-mode";
+
+function isThemeMode(value: string | null): value is ThemeMode {
+  return value === "dark" || value === "light";
+}
+
+function getInitialThemeMode(): ThemeMode {
+  if (typeof window === "undefined") {
+    return "dark";
+  }
+
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return isThemeMode(storedTheme) ? storedTheme : "dark";
+  } catch {
+    return "dark";
+  }
+}
 
 export default function App() {
   const [vaultNodes, setVaultNodes] = useState<SecureVaultNode[]>(() => initialNodes);
@@ -43,7 +61,7 @@ export default function App() {
   const [trashItems, setTrashItems] = useState<TrashedFileItem[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
-  const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedNode = selectedItem?.node ?? null;
   const selectedPathSegments = selectedItem?.pathSegments ?? [];
@@ -82,6 +100,12 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = themeMode;
+
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
+    } catch {
+      // Keep the selected theme in memory if storage is unavailable.
+    }
   }, [themeMode]);
 
   useEffect(() => {
