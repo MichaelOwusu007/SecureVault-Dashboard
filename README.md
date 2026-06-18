@@ -1,5 +1,7 @@
 # SecureVault Dashboard
 
+## Project Overview
+
 SecureVault Dashboard is a dark-mode enterprise cloud security file explorer built for SecureVault Inc. It presents nested legal, finance, security, and shared resource records in a fast, keyboard-accessible interface that can scale from shallow folders to deeply nested case archives.
 
 ## Business Problem
@@ -35,12 +37,29 @@ For a production check:
 npm run build
 ```
 
-## Links
+## Live Demo
 
-- Design file: [SecureVault Dashboard Design](https://www.figma.com/design/iA1tcbISYFbptXL0SZdFzN/SecureVault-Dashboard-Design?node-id=0-1&t=w98MEa94DJI02GGe-1)
-- Live demo: `TODO: Add deployed demo link here`
+[View Live SecureVault Dashboard](https://secure-vault-dashboard-ten.vercel.app/)
 
-The Figma file was generated from the implemented SecureVault UI and organized into cover, design system, dashboard, component, interaction-state, and responsive design sections. Because the current Figma Starter plan limits the file to 3 pages, the requested dashboard, component, interaction, and mobile views are represented as editable top-level frames inside the Dashboard & Components page.
+## Design Deliverable
+
+- [Design Documentation PDF in Repository](./docs/SecureVault-Design-Documentation.pdf)
+- [Live Design Documentation PDF](https://secure-vault-dashboard-ten.vercel.app/SecureVault-Design-Documentation.pdf)
+
+
+The design PDF documents the implemented UI and includes:
+
+- Project overview
+- Design direction
+- Design system
+- Typography scale
+- Dark and light color palettes
+- Spacing grid
+- Component states
+- Dashboard frames
+- Main components
+- Interaction notes
+- Accessibility notes
 
 ## Data Source
 
@@ -62,7 +81,7 @@ The app uses the provided `data.json` structure exactly: every node keeps its `i
 - Frontend-only Import to Vault, rename, Move to Trash, Restore, and Delete Permanently actions
 - Folder selection for choosing an import destination
 - Custom confirmation modals and toast notifications without external libraries
-- Top-right theme toggle with dark mode as the default assessment theme
+- Top-right theme toggle with dark mode as the default product theme
 - Search and filter across folders and files
 - 300ms debounced search input to avoid recursive filtering on every keystroke
 - Deep search results automatically reveal parent folders
@@ -103,7 +122,7 @@ The required wildcard feature is a breadcrumb path bar with a copy action. Legal
 
 ## Frontend-Only File Actions
 
-The Vault File Actions feature is intentionally frontend-only for this assessment. `Import to Vault` opens the browser file picker with a hidden `<input type="file" />`, reads safe browser-provided metadata such as file name, MIME type, size, and last modified date, then stores the imported file in React state.
+The Vault File Actions feature is intentionally frontend-only. `Import to Vault` opens the browser file picker with a hidden `<input type="file" />`, reads safe browser-provided metadata such as file name, MIME type, size, and last modified date, then stores the imported file in React state.
 
 Browsers do not expose the user's real local computer path for security reasons, so the app never attempts to read paths like `C:/Users/...`. Instead, SecureVault generates its own internal vault path based on the selected folder. For example, importing `NDA-final.pdf` into `SecureVault / Legal Cases / 2026 / Contracts` creates the internal path `/SecureVault/Legal Cases/2026/Contracts/NDA-final.pdf`.
 
@@ -132,7 +151,10 @@ src/
   main.tsx
   styles.css
 docs/
+  SecureVault-Design-Documentation.pdf
   design-system.md
+public/
+  SecureVault-Design-Documentation.pdf
 ```
 
 ## Future Improvements
