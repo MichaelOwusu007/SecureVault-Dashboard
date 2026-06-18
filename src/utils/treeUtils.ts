@@ -3,6 +3,9 @@ export type FileNode = {
   name: string;
   type: "file";
   size: string;
+  mimeType?: string;
+  lastModified?: string;
+  importedAt?: string;
 };
 
 export type FolderNode = {
@@ -25,6 +28,21 @@ export type NodePathResult = {
   node: SecureVaultNode;
   pathSegments: string[];
   parentIds: string[];
+};
+
+export type RemovedFileResult = {
+  nodes: SecureVaultNode[];
+  file: FileNode;
+  pathSegments: string[];
+  parentIds: string[];
+};
+
+export type TrashedFileItem = {
+  id: string;
+  file: FileNode;
+  originalParentId: string | null;
+  originalPathSegments: string[];
+  trashedAt: string;
 };
 
 export type TreeCounts = {
@@ -53,6 +71,23 @@ export function isFile(node: SecureVaultNode): node is FileNode {
 
 export function formatFullPath(pathSegments: string[]): string {
   return `/${[VAULT_ROOT_LABEL, ...pathSegments].join("/")}`;
+}
+
+export function formatDisplayDate(value?: string): string {
+  if (!value) {
+    return "Not available";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 export function getFileExtension(fileName: string): string {
@@ -140,6 +175,110 @@ export function formatStorage(bytes: number): string {
   }
 
   return `${bytes.toFixed(0)}B`;
+}
+
+export function getUniqueNodeName(nodes: SecureVaultNode[], requestedName: string): string {
+  const existingNames = new Set(nodes.map((node) => node.name.toLowerCase()));
+
+  if (!existingNames.has(requestedName.toLowerCase())) {
+    return requestedName;
+  }
+
+  const extensionIndex = requestedName.lastIndexOf(".");
+  const hasExtension = extensionIndex > 0;
+  const baseName = hasExtension ? requestedName.slice(0, extensionIndex) : requestedName;
+  const extension = hasExtension ? requestedName.slice(extensionIndex) : "";
+  let nextIndex = 2;
+
+  while (existingNames.has(`${baseName} (${nextIndex})${extension}`.toLowerCase())) {
+    nextIndex += 1;
+  }
+
+  return `${baseName} (${nextIndex})${extension}`;
+}
+
+export function addNodeToFolder(
+  nodes: SecureVaultNode[],
+  folderId: string | null,
+  nodeToAdd: SecureVaultNode,
+): { nodes: SecureVaultNode[]; addedNode: SecureVaultNode } {
+  if (!folderId) {
+    const addedNode = { ...nodeToAdd, name: getUniqueNodeName(nodes, nodeToAdd.name) };
+    return { nodes: [...nodes, addedNode], addedNode };
+  }
+
+  let addedNode: SecureVaultNode | null = null;
+
+  const nextNodes = nodes.map((node) => {
+    if (!isFolder(node)) {
+      return node;
+    }
+
+    if (node.id === folderId) {
+      addedNode = { ...nodeToAdd, name: getUniqueNodeName(node.children, nodeToAdd.name) };
+      return { ...node, children: [...node.children, addedNode] };
+    }
+
+    const result = addNodeToFolder(node.children, folderId, nodeToAdd);
+
+    if (result.addedNode !== nodeToAdd) {
+      addedNode = result.addedNode;
+      return { ...node, children: result.nodes };
+    }
+
+    return node;
+  });
+
+  return { nodes: nextNodes, addedNode: addedNode ?? nodeToAdd };
+}
+
+export function removeFileById(
+  nodes: SecureVaultNode[],
+  fileId: string,
+  pathSegments: string[] = [],
+  parentIds: string[] = [],
+): RemovedFileResult | null {
+  for (const node of nodes) {
+    const nextPath = [...pathSegments, node.name];
+
+    if (isFile(node) && node.id === fileId) {
+      return {
+        nodes: nodes.filter((item) => item.id !== fileId),
+        file: node,
+        pathSegments: nextPath,
+        parentIds,
+      };
+    }
+
+    if (isFolder(node)) {
+      const childResult = removeFileById(node.children, fileId, nextPath, [...parentIds, node.id]);
+
+      if (childResult) {
+        return {
+          ...childResult,
+          nodes: nodes.map((item) =>
+            item.id === node.id && isFolder(item) ? { ...item, children: childResult.nodes } : item,
+          ),
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+export function renameFileById(nodes: SecureVaultNode[], fileId: string, nextName: string): SecureVaultNode[] {
+  return nodes.map((node) => {
+    if (isFile(node) && node.id === fileId) {
+      return { ...node, name: nextName };
+    }
+
+    if (isFolder(node)) {
+      return { ...node, children: renameFileById(node.children, fileId, nextName) };
+    }
+
+    return node;
+  });
 }
 
 export function getTopLevelFolderIds(nodes: SecureVaultNode[]): Set<string> {

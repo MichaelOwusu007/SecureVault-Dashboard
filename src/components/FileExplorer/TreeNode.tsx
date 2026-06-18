@@ -8,13 +8,13 @@ type TreeNodeProps = {
   siblingCount: number;
   pathSegments: string[];
   expandedIds: Set<string>;
-  selectedFileId: string | null;
+  selectedNodeId: string | null;
   focusedId: string | null;
   searchQuery: string;
   registerItem: (id: string) => RefCallback<HTMLDivElement>;
   onFolderToggle: (nodeId: string) => void;
   onFocusItem: (nodeId: string) => void;
-  onFileSelect: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onNodeSelect: (node: SecureVaultNode, pathSegments: string[]) => void;
 };
 
 function renderHighlightedName(name: string, query: string) {
@@ -50,18 +50,18 @@ export function TreeNode({
   siblingCount,
   pathSegments,
   expandedIds,
-  selectedFileId,
+  selectedNodeId,
   focusedId,
   searchQuery,
   registerItem,
   onFolderToggle,
   onFocusItem,
-  onFileSelect,
+  onNodeSelect,
 }: TreeNodeProps) {
   const folder = isFolder(node);
   const file = isFile(node);
   const expanded = folder ? expandedIds.has(node.id) : undefined;
-  const selected = file && selectedFileId === node.id;
+  const selected = selectedNodeId === node.id;
   const currentPath = [...pathSegments, node.name];
   const iconMeta = getNodeIconMeta(node);
 
@@ -69,11 +69,12 @@ export function TreeNode({
     onFocusItem(node.id);
 
     if (folder) {
+      onNodeSelect(node, currentPath);
       onFolderToggle(node.id);
       return;
     }
 
-    onFileSelect(node, currentPath);
+    onNodeSelect(node, currentPath);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -87,11 +88,11 @@ export function TreeNode({
     <>
       <div
         ref={registerItem(node.id)}
-        className={`tree-row${selected ? " is-selected" : ""}`}
+        className={`tree-row${selected && file ? " is-selected" : ""}${selected && folder ? " is-destination" : ""}`}
         role="treeitem"
         aria-level={depth}
         aria-expanded={folder ? expanded : undefined}
-        aria-selected={file ? selected : undefined}
+        aria-selected={selected}
         aria-posinset={index + 1}
         aria-setsize={siblingCount}
         tabIndex={focusedId === node.id ? 0 : -1}
@@ -123,13 +124,13 @@ export function TreeNode({
               siblingCount={node.children.length}
               pathSegments={currentPath}
               expandedIds={expandedIds}
-              selectedFileId={selectedFileId}
+              selectedNodeId={selectedNodeId}
               focusedId={focusedId}
               searchQuery={searchQuery}
               registerItem={registerItem}
               onFolderToggle={onFolderToggle}
               onFocusItem={onFocusItem}
-              onFileSelect={onFileSelect}
+              onNodeSelect={onNodeSelect}
             />
           ))}
         </div>

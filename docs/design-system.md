@@ -61,10 +61,12 @@ Panels and controls use an 8px maximum radius to keep the product precise rather
 | Expanded | Disclosure indicator rotates 90 degrees and child group renders below |
 | Collapsed | Disclosure returns to the default direction and child group is removed from the DOM |
 | Disabled | Copy path button becomes muted and non-interactive until a file is selected |
+| Folder destination | Amber-tinted tree row state showing the current import target |
+| Destructive | Red-tinted buttons and modal accents for permanent deletion |
 
 ## Dashboard Components
 
-Summary cards use compact KPI formatting for vault totals, storage, and file type coverage. File icons use extension-specific color tokens so users can distinguish PDFs, DOCX, XLSX, PNG, folders, and supporting files while scanning the tree. The command help panel is fixed to the lower-right viewport edge and uses real buttons that trigger the same tree commands as keyboard input.
+Summary cards use compact KPI formatting for vault totals, storage, and file type coverage. File icons use extension-specific color tokens so users can distinguish PDFs, DOCX, XLSX, PNG, folders, and supporting files while scanning the tree. The command help panel is fixed to the lower-right viewport edge and uses real buttons that trigger the same tree commands as keyboard input. File actions use custom modals, toasts, and a recoverable Trash panel to keep enterprise-risk actions explicit.
 
 ## Accessibility Notes
 

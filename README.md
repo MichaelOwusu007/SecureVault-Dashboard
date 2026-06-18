@@ -57,6 +57,9 @@ The app uses the provided `data.json` structure exactly: every node keeps its `i
 - Accessible tree roles and states with `role="tree"`, `role="treeitem"`, `aria-expanded`, and `aria-selected`
 - Breadcrumb path bar for the selected file
 - Copy path button with a "Path copied" confirmation
+- Frontend-only Import to Vault, rename, Move to Trash, Restore, and Delete Permanently actions
+- Folder selection for choosing an import destination
+- Custom confirmation modals and toast notifications without external libraries
 - Search and filter across folders and files
 - 300ms debounced search input to avoid recursive filtering on every keystroke
 - Deep search results automatically reveal parent folders
@@ -95,6 +98,14 @@ The fixed command help panel in the lower-right corner calls the same navigation
 
 The required wildcard feature is a breadcrumb path bar with a copy action. Legal and banking users often need to reference exact file locations in case notes, audit logs, or compliance tickets. Showing the full path and copying it directly reduces the risk of opening, citing, or sending the wrong file path. After copying, the interface confirms the action with a small "Path copied" status message.
 
+## Frontend-Only File Actions
+
+The Vault File Actions feature is intentionally frontend-only for this assessment. `Import to Vault` opens the browser file picker with a hidden `<input type="file" />`, reads safe browser-provided metadata such as file name, MIME type, size, and last modified date, then stores the imported file in React state.
+
+Browsers do not expose the user's real local computer path for security reasons, so the app never attempts to read paths like `C:/Users/...`. Instead, SecureVault generates its own internal vault path based on the selected folder. For example, importing `NDA-final.pdf` into `SecureVault / Legal Cases / 2026 / Contracts` creates the internal path `/SecureVault/Legal Cases/2026/Contracts/NDA-final.pdf`.
+
+Move to Trash, Restore, Rename, and Delete Permanently are also simulated with React state. Moved files are removed from the active tree and stored in a Trash panel with their original internal path so they can be restored. Permanent deletion removes the file from the frontend demo state. In production, these actions would connect to a secure backend API, authorization checks, audit logging, durable object storage, and a database.
+
 ## Project Structure
 
 ```text
@@ -102,11 +113,14 @@ src/
   components/
     FileExplorer/
       BreadcrumbBar.tsx
+      ConfirmationModal.tsx
       EmptyState.tsx
       FileExplorer.tsx
       PropertiesPanel.tsx
       SearchBar.tsx
+      ToastContainer.tsx
       TreeNode.tsx
+      TrashPanel.tsx
   data/
     data.json
   utils/

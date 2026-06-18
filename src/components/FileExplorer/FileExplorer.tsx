@@ -17,8 +17,10 @@ import { TreeNode } from "./TreeNode";
 
 type FileExplorerProps = {
   nodes: SecureVaultNode[];
-  selectedFile: FileNode | null;
-  onFileSelect: (file: FileNode, pathSegments: string[]) => void;
+  selectedNode: SecureVaultNode | null;
+  importDestinationLabel: string;
+  onImportToVault: () => void;
+  onNodeSelect: (node: SecureVaultNode, pathSegments: string[]) => void;
 };
 
 type ExplorerCommand = "previous" | "next" | "expand" | "collapse" | "select";
@@ -30,7 +32,13 @@ function getVisibleIndex(items: VisibleTreeItem[], focusedId: string | null) {
   );
 }
 
-export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorerProps) {
+export function FileExplorer({
+  nodes,
+  selectedNode,
+  importDestinationLabel,
+  onImportToVault,
+  onNodeSelect,
+}: FileExplorerProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => getTopLevelFolderIds(nodes));
   const [focusedId, setFocusedId] = useState<string | null>(() => nodes[0]?.id ?? null);
   const [searchInput, setSearchInput] = useState("");
@@ -141,12 +149,6 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
     });
   }, []);
 
-  const handleFileSelect = (node: SecureVaultNode, pathSegments: string[]) => {
-    if (isFile(node)) {
-      onFileSelect(node, pathSegments);
-    }
-  };
-
   const runExplorerCommand = useCallback(
     (command: ExplorerCommand) => {
       if (!visibleItems.length) {
@@ -187,9 +189,9 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
         return;
       }
 
-      if (command === "select" && isFile(currentNode)) {
+      if (command === "select") {
         const pathResult = findNodePath(nodes, currentNode.id);
-        onFileSelect(currentNode, pathResult?.pathSegments ?? currentItem.pathSegments);
+        onNodeSelect(currentNode, pathResult?.pathSegments ?? currentItem.pathSegments);
         focusTreeItem(currentNode.id);
       }
     },
@@ -200,7 +202,7 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
       focusTreeItem,
       focusedId,
       nodes,
-      onFileSelect,
+      onNodeSelect,
       visibleItems,
     ],
   );
@@ -228,10 +230,8 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
         runExplorerCommand("collapse");
         break;
       case "Enter":
-        if (focusedNodeIsFile) {
-          event.preventDefault();
-          runExplorerCommand("select");
-        }
+        event.preventDefault();
+        runExplorerCommand("select");
         break;
       default:
         break;
@@ -245,7 +245,14 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
           <p className="eyebrow">File explorer</p>
           <h2>Vault records</h2>
         </div>
-        <span className="sync-badge">Protected</span>
+        <div className="explorer-toolbar">
+          <span className="destination-chip" title={`Import destination: ${importDestinationLabel}`}>
+            {importDestinationLabel}
+          </span>
+          <button className="import-button" type="button" onClick={onImportToVault}>
+            Import to Vault
+          </button>
+        </div>
       </div>
 
       <SearchBar value={searchInput} onChange={setSearchInput} resultCount={visibleItems.length} />
@@ -267,13 +274,13 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
               siblingCount={filteredNodes.length}
               pathSegments={[]}
               expandedIds={effectiveExpandedIds}
-              selectedFileId={selectedFile?.id ?? null}
+              selectedNodeId={selectedNode?.id ?? null}
               focusedId={focusedId}
               searchQuery={debouncedSearchQuery}
               registerItem={registerItem}
               onFolderToggle={toggleFolder}
               onFocusItem={setFocusedId}
-              onFileSelect={handleFileSelect}
+              onNodeSelect={onNodeSelect}
             />
           ))
         ) : (
@@ -327,8 +334,8 @@ export function FileExplorer({ nodes, selectedFile, onFileSelect }: FileExplorer
             type="button"
             className="command-action--wide"
             onClick={() => runExplorerCommand("select")}
-            disabled={!focusedNodeIsFile}
-            aria-label="Select focused file"
+            disabled={!focusedNode}
+            aria-label={focusedNodeIsFile ? "Select focused file" : "Select focused folder as import destination"}
           >
             <kbd aria-hidden="true">Enter</kbd>
             <span>Select</span>

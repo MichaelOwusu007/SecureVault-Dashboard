@@ -1,53 +1,168 @@
-import { FileNode, formatFullPath } from "../../utils/treeUtils";
+import { FormEvent, useEffect, useState } from "react";
+import {
+  SecureVaultNode,
+  formatDisplayDate,
+  formatFullPath,
+  getFileExtension,
+  isFile,
+  isFolder,
+} from "../../utils/treeUtils";
 
 type PropertiesPanelProps = {
-  selectedFile: FileNode | null;
+  selectedNode: SecureVaultNode | null;
   pathSegments: string[];
+  onRenameFile: (fileId: string, nextName: string) => void;
+  onMoveToTrash: () => void;
+  onDeletePermanently: () => void;
 };
 
-export function PropertiesPanel({ selectedFile, pathSegments }: PropertiesPanelProps) {
-  if (!selectedFile) {
+export function PropertiesPanel({
+  selectedNode,
+  pathSegments,
+  onRenameFile,
+  onMoveToTrash,
+  onDeletePermanently,
+}: PropertiesPanelProps) {
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [draftName, setDraftName] = useState("");
+
+  useEffect(() => {
+    setIsRenaming(false);
+    setDraftName(selectedNode?.name ?? "");
+  }, [selectedNode?.id, selectedNode?.name]);
+
+  if (!selectedNode) {
     return (
-      <aside className="properties-panel" aria-label="File properties">
+      <aside className="properties-panel" aria-label="Vault properties">
         <div className="panel-heading">
           <p className="eyebrow">Properties</p>
-          <h2>Awaiting file selection</h2>
+          <h2>Awaiting selection</h2>
         </div>
         <div className="selection-placeholder">
           <div className="placeholder-file" aria-hidden="true" />
-          <p>Select a file in the explorer to inspect metadata, verify size, and copy the exact vault path.</p>
+          <p>Select a file for metadata and actions, or select a folder as the import destination.</p>
         </div>
       </aside>
     );
   }
 
   const fullPath = formatFullPath(pathSegments);
+  const selectedFile = isFile(selectedNode) ? selectedNode : null;
+  const selectedFolder = isFolder(selectedNode) ? selectedNode : null;
+
+  const handleRenameSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!selectedFile) {
+      return;
+    }
+
+    const nextName = draftName.trim();
+
+    if (!nextName || nextName === selectedFile.name) {
+      setIsRenaming(false);
+      setDraftName(selectedFile.name);
+      return;
+    }
+
+    onRenameFile(selectedFile.id, nextName);
+    setIsRenaming(false);
+  };
 
   return (
-    <aside className="properties-panel" aria-label={`${selectedFile.name} properties`}>
+    <aside
+      className="properties-panel"
+      aria-label={`${selectedNode.name} ${selectedFolder ? "folder" : "file"} properties`}
+    >
       <div className="panel-heading">
-        <p className="eyebrow">Properties</p>
-        <h2>{selectedFile.name}</h2>
+        <p className="eyebrow">{selectedFolder ? "Folder destination" : "Properties"}</p>
+        <h2>{selectedNode.name}</h2>
       </div>
 
       <dl className="metadata-list">
         <div>
           <dt>Name</dt>
-          <dd>{selectedFile.name}</dd>
+          <dd>{selectedNode.name}</dd>
         </div>
         <div>
           <dt>Type</dt>
-          <dd>{selectedFile.type}</dd>
+          <dd>{selectedFolder ? "Folder" : getFileExtension(selectedNode.name).toUpperCase()}</dd>
         </div>
+        {selectedFile ? (
+          <>
+            <div>
+              <dt>Size</dt>
+              <dd>{selectedFile.size}</dd>
+            </div>
+            <div>
+              <dt>MIME type</dt>
+              <dd>{selectedFile.mimeType || "Not available"}</dd>
+            </div>
+            <div>
+              <dt>Last modified</dt>
+              <dd>{formatDisplayDate(selectedFile.lastModified)}</dd>
+            </div>
+          </>
+        ) : null}
+        {selectedFolder ? (
+          <div>
+            <dt>Child items</dt>
+            <dd>{selectedFolder.children.length}</dd>
+          </div>
+        ) : null}
         <div>
-          <dt>Size</dt>
-          <dd>{selectedFile.size}</dd>
-        </div>
-        <div>
-          <dt>Full path</dt>
+          <dt>Internal path</dt>
           <dd className="path-value">{fullPath}</dd>
         </div>
       </dl>
+
+      {selectedFile ? (
+        <div className="file-action-stack" aria-label="File actions">
+          <div className="rename-card">
+            <div>
+              <p className="action-title">Edit file name</p>
+              <p className="action-note">Updates the frontend vault tree and internal path.</p>
+            </div>
+            {isRenaming ? (
+              <form className="rename-form" onSubmit={handleRenameSubmit}>
+                <label className="sr-only" htmlFor="rename-file-input">
+                  New file name
+                </label>
+                <input
+                  id="rename-file-input"
+                  value={draftName}
+                  onChange={(event) => setDraftName(event.target.value)}
+                  autoFocus
+                />
+                <div className="rename-actions">
+                  <button type="submit">Save</button>
+                  <button
+                    type="button"
+                    className="secondary-action"
+                    onClick={() => {
+                      setIsRenaming(false);
+                      setDraftName(selectedFile.name);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
+                Rename file
+              </button>
+            )}
+          </div>
+
+          <button className="vault-action-button" type="button" onClick={onMoveToTrash}>
+            Move to Trash
+          </button>
+          <button className="vault-action-button vault-action-button--danger" type="button" onClick={onDeletePermanently}>
+            Delete Permanently
+          </button>
+        </div>
+      ) : null}
     </aside>
   );
 }

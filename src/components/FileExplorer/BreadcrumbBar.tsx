@@ -12,8 +12,8 @@ export function BreadcrumbBar({ pathSegments, canCopy, copied, onCopy }: Breadcr
   const crumbs = pathSegments.length > 0 ? [VAULT_ROOT_LABEL, ...pathSegments] : [VAULT_ROOT_LABEL];
 
   return (
-    <section className="breadcrumb-bar" aria-label="Selected file path">
-      <div className="breadcrumb-track" title={pathSegments.length > 0 ? fullPath : "No file selected"}>
+    <section className="breadcrumb-bar" aria-label="Selected vault path">
+      <div className="breadcrumb-track" title={pathSegments.length > 0 ? fullPath : "No vault item selected"}>
         {crumbs.map((crumb, index) => (
           <span className="breadcrumb-item" key={`${crumb}-${index}`}>
             {index > 0 ? <span className="breadcrumb-separator">/</span> : null}
@@ -32,7 +32,7 @@ export function BreadcrumbBar({ pathSegments, canCopy, copied, onCopy }: Breadcr
           type="button"
           onClick={onCopy}
           disabled={!canCopy}
-          aria-label={canCopy ? "Copy selected file path" : "Select a file to copy its path"}
+          aria-label={canCopy ? "Copy selected vault path" : "Select a file or folder to copy its path"}
         >
           <span className="copy-button__icon" aria-hidden="true" />
           Copy path
