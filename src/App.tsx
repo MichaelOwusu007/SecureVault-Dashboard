@@ -470,7 +470,8 @@ export default function App() {
             title={isLightMode ? "Switch to dark mode" : "Switch to light mode"}
           >
             <span className="theme-toggle__track" aria-hidden="true">
-              <span className="theme-toggle__icon" />
+              <span className="theme-toggle__icon theme-toggle__icon--sun" />
+              <span className="theme-toggle__icon theme-toggle__icon--moon" />
             </span>
           </button>
         </div>
