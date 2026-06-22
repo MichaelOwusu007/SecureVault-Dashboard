@@ -102,9 +102,166 @@ export function getFileExtension(fileName: string): string {
   return extension && extension !== fileName ? extension.toLowerCase() : "file";
 }
 
+function getMeaningfulExtension(fileName: string): string {
+  const trimmedName = fileName.trim();
+  const extensionStart = trimmedName.lastIndexOf(".");
+
+  if (extensionStart <= 0 || extensionStart === trimmedName.length - 1) {
+    return "";
+  }
+
+  return trimmedName.slice(extensionStart + 1).toLowerCase();
+}
+
+const specialFileKinds: Record<string, string> = {
+  ".env": "Environment Config",
+  ".env.example": "Environment Example Config",
+  ".env.local": "Environment Config",
+  ".gitignore": "Git Ignore Config",
+  dockerfile: "Dockerfile",
+  license: "License File",
+  "package.json": "Package JSON",
+  readme: "Documentation File",
+  "readme.md": "Markdown Documentation",
+  "postcss.config.js": "PostCSS Config",
+  "tailwind.config.js": "Tailwind Config",
+  "tsconfig.json": "TypeScript Config",
+  "vite.config.ts": "Vite Config",
+};
+
+const extensionFileKinds: Record<string, string> = {
+  "7z": "Archive File",
+  avi: "Video File",
+  css: "CSS File",
+  csv: "CSV File",
+  doc: "Word Document",
+  docx: "Word Document",
+  gif: "Image File",
+  html: "HTML File",
+  jpeg: "Image File",
+  jpg: "Image File",
+  js: "JavaScript File",
+  json: "JSON File",
+  jsx: "React JSX File",
+  md: "Markdown File",
+  mov: "Video File",
+  mp3: "Audio File",
+  mp4: "Video File",
+  otf: "Font File",
+  pdf: "PDF Document",
+  png: "Image File",
+  ppt: "PowerPoint Presentation",
+  pptx: "PowerPoint Presentation",
+  rar: "Archive File",
+  scss: "SCSS File",
+  svg: "Image File",
+  ttf: "Font File",
+  ts: "TypeScript File",
+  tsx: "React TSX File",
+  txt: "Text File",
+  wav: "Audio File",
+  webp: "Image File",
+  woff: "Font File",
+  woff2: "Font File",
+  xls: "Excel Spreadsheet",
+  xlsx: "Excel Spreadsheet",
+  yaml: "YAML File",
+  yml: "YAML File",
+  zip: "Archive File",
+};
+
+const mimeFileKinds: Record<string, string> = {
+  "application/javascript": "JavaScript File",
+  "application/json": "JSON File",
+  "application/msword": "Word Document",
+  "application/pdf": "PDF Document",
+  "application/vnd.ms-excel": "Excel Spreadsheet",
+  "application/vnd.ms-powerpoint": "PowerPoint Presentation",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "PowerPoint Presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel Spreadsheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word Document",
+  "application/x-7z-compressed": "Archive File",
+  "application/x-rar-compressed": "Archive File",
+  "application/zip": "Archive File",
+  "audio/mpeg": "Audio File",
+  "image/svg+xml": "Image File",
+  "text/css": "CSS File",
+  "text/csv": "CSV File",
+  "text/html": "HTML File",
+  "text/javascript": "JavaScript File",
+  "text/markdown": "Markdown File",
+  "text/plain": "Text File",
+};
+
+export function getFileKind(fileName: string, mimeType?: string): string {
+  const normalizedName = fileName.trim().toLowerCase();
+  const specialKind = specialFileKinds[normalizedName];
+
+  if (specialKind) {
+    return specialKind;
+  }
+
+  const extension = getMeaningfulExtension(fileName);
+  const extensionKind = extension ? extensionFileKinds[extension] : undefined;
+
+  if (extensionKind) {
+    return extensionKind;
+  }
+
+  if (!extension) {
+    return "File";
+  }
+
+  const normalizedMimeType = mimeType?.trim().toLowerCase();
+
+  if (normalizedMimeType) {
+    const mimeKind = mimeFileKinds[normalizedMimeType];
+
+    if (mimeKind) {
+      return mimeKind;
+    }
+
+    if (normalizedMimeType.startsWith("image/")) {
+      return "Image File";
+    }
+
+    if (normalizedMimeType.startsWith("video/")) {
+      return "Video File";
+    }
+
+    if (normalizedMimeType.startsWith("audio/")) {
+      return "Audio File";
+    }
+  }
+
+  return "File";
+}
+
 export function getNodeIconMeta(node: SecureVaultNode): NodeIconMeta {
   if (isFolder(node)) {
     return { kind: "folder", label: "Folder" };
+  }
+
+  const normalizedName = node.name.trim().toLowerCase();
+
+  if (normalizedName === ".gitignore") {
+    return { kind: "generic", label: "GIT" };
+  }
+
+  if (normalizedName.startsWith(".env")) {
+    return { kind: "generic", label: "ENV" };
+  }
+
+  if (normalizedName === "readme" || normalizedName === "readme.md") {
+    return { kind: "txt", label: "DOC" };
+  }
+
+  if (normalizedName === "license") {
+    return { kind: "txt", label: "LIC" };
+  }
+
+  if (normalizedName === "dockerfile") {
+    return { kind: "generic", label: "DKR" };
   }
 
   const extension = getFileExtension(node.name);
@@ -129,12 +286,60 @@ export function getNodeIconMeta(node: SecureVaultNode): NodeIconMeta {
     return { kind: "txt", label: "TXT" };
   }
 
+  if (extension === "json") {
+    return { kind: "generic", label: "JSON" };
+  }
+
+  if (extension === "md") {
+    return { kind: "txt", label: "MD" };
+  }
+
+  if (extension === "csv") {
+    return { kind: "generic", label: "CSV" };
+  }
+
+  if (extension === "ppt" || extension === "pptx") {
+    return { kind: "generic", label: "PPT" };
+  }
+
+  if (extension === "js" || extension === "jsx") {
+    return { kind: "generic", label: "JS" };
+  }
+
+  if (extension === "ts" || extension === "tsx") {
+    return { kind: "generic", label: "TS" };
+  }
+
+  if (extension === "html") {
+    return { kind: "generic", label: "HTML" };
+  }
+
+  if (extension === "css" || extension === "scss") {
+    return { kind: "generic", label: "CSS" };
+  }
+
   if (extension === "yaml" || extension === "yml") {
     return { kind: "yaml", label: "YML" };
   }
 
+  if (["jpg", "jpeg", "webp", "gif"].includes(extension)) {
+    return { kind: "png", label: "IMG" };
+  }
+
   if (extension === "svg") {
     return { kind: "svg", label: "SVG" };
+  }
+
+  if (["mp4", "mov", "avi"].includes(extension)) {
+    return { kind: "generic", label: "VID" };
+  }
+
+  if (["mp3", "wav"].includes(extension)) {
+    return { kind: "generic", label: "AUD" };
+  }
+
+  if (["zip", "rar", "7z"].includes(extension)) {
+    return { kind: "generic", label: "ZIP" };
   }
 
   if (extension === "ttf" || extension === "otf" || extension === "woff" || extension === "woff2") {

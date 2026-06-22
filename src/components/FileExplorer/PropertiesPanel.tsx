@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   SecureVaultNode,
   formatFullPath,
-  getFileExtension,
+  getFileKind,
   isFile,
   isFolder,
 } from "../../utils/treeUtils";
@@ -34,8 +34,10 @@ export function PropertiesPanel({
     return (
       <aside className="properties-panel" aria-label="Vault properties">
         <div className="panel-heading">
-          <p className="eyebrow">Properties</p>
-          <h2>Awaiting selection</h2>
+          <div className="panel-heading__title">
+            <p className="eyebrow">Properties</p>
+            <h2>Awaiting selection</h2>
+          </div>
         </div>
         <div className="selection-placeholder">
           <div className="placeholder-file" aria-hidden="true" />
@@ -49,6 +51,7 @@ export function PropertiesPanel({
   const selectedFile = isFile(selectedNode) ? selectedNode : null;
   const selectedFolder = isFolder(selectedNode) ? selectedNode : null;
   const selectedNodeKind = selectedFolder ? "folder" : "file";
+  const fileKind = selectedFile ? getFileKind(selectedFile.name, selectedFile.mimeType) : null;
 
   const handleRenameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,8 +74,24 @@ export function PropertiesPanel({
       aria-label={`${selectedNode.name} ${selectedFolder ? "folder" : "file"} properties`}
     >
       <div className="panel-heading">
-        <p className="eyebrow">{selectedFolder ? "Folder destination" : "Properties"}</p>
-        <h2>{selectedNode.name}</h2>
+        <div className="panel-heading__title">
+          <p className="eyebrow">{selectedFolder ? "Folder destination" : "Properties"}</p>
+          <h2>{selectedNode.name}</h2>
+        </div>
+        {selectedFile ? (
+          <div className="panel-heading__actions" aria-label="File actions">
+            <button className="panel-action-button" type="button" onClick={onMoveToTrash}>
+              Trash
+            </button>
+            <button
+              className="panel-action-button panel-action-button--danger"
+              type="button"
+              onClick={onDeletePermanently}
+            >
+              Delete
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <dl className="metadata-list">
@@ -81,11 +100,15 @@ export function PropertiesPanel({
           <dd>{selectedNode.name}</dd>
         </div>
         <div>
-          <dt>Type</dt>
-          <dd>{selectedFolder ? "Folder" : getFileExtension(selectedNode.name).toUpperCase()}</dd>
+          <dt>Item type</dt>
+          <dd>{selectedFolder ? "Folder" : "File"}</dd>
         </div>
         {selectedFile ? (
           <>
+            <div>
+              <dt>File kind</dt>
+              <dd>{fileKind}</dd>
+            </div>
             <div>
               <dt>Size</dt>
               <dd>{selectedFile.size}</dd>
@@ -135,27 +158,12 @@ export function PropertiesPanel({
                 </button>
               </div>
             </form>
-          ) : (
-            <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
-              Rename {selectedNodeKind}
-            </button>
-          )}
-        </div>
-
-        {selectedFile ? (
-          <div className="rename-card">
-            <button className="vault-action-button" type="button" onClick={onMoveToTrash}>
-              Move to Trash
-            </button>
-            <button
-              className="vault-action-button vault-action-button--danger"
-              type="button"
-              onClick={onDeletePermanently}
-            >
-              Delete Permanently
-            </button>
-          </div>
-        ) : null}
+        ) : (
+          <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
+            Rename {selectedNodeKind}
+          </button>
+        )}
+      </div>
       </div>
     </aside>
   );

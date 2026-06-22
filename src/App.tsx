@@ -428,9 +428,6 @@ export default function App() {
         tone: pendingConfirmation.type === "move-to-trash" ? "warning" : "danger",
       }
     : null;
-  const importDestinationLabel = selectedFolder
-    ? `Destination: ${selectedFolder.name}`
-    : "Destination: Root vault";
   const isLightMode = themeMode === "light";
 
   return (
@@ -455,10 +452,6 @@ export default function App() {
         </div>
         <div className="topbar-actions">
           <div className="topbar-status" aria-label="Workspace status">
-            <span>
-              <strong>Protected</strong>
-              <small>workspace</small>
-            </span>
             <span>
               <strong>Path audit</strong>
               <small>ready</small>
@@ -510,7 +503,6 @@ export default function App() {
           <FileExplorer
             nodes={vaultNodes}
             selectedNode={selectedNode}
-            importDestinationLabel={importDestinationLabel}
             hasClipboard={Boolean(vaultClipboard)}
             onImportToVault={handleImportToVault}
             onNodeSelect={handleNodeSelect}

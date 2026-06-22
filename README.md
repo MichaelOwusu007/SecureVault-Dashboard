@@ -65,10 +65,13 @@ The design PDF documents the implemented UI and includes:
 
 The app uses the provided `data.json` structure exactly: every node keeps its `id`, `name`, `type`, optional `children`, and optional `size` fields. A matching copy lives at `src/data/data.json` so Vite can import it directly from the application source without changing the JSON shape.
 
+SecureVault keeps the original `type` field as the structural node type for app logic. `type: "file"` and `type: "folder"` still drive recursive rendering, expand/collapse behavior, selection, context actions, imports, and properties logic. Separately, the dashboard derives a user-friendly file kind from the filename or browser MIME type, so files like `.gitignore`, `README`, `.env`, and `package.json` can be displayed professionally without breaking the recursive tree contract.
+
 ## Features
 
 - Recursive file and folder tree using the provided `data.json` structure
 - Extension-aware icons for folders, PDF, DOCX, XLSX, PNG, and supporting file types
+- Separate structural item type and user-friendly file kind labels in the Properties panel
 - Vault summary KPI cards for total files, folders, storage used, and file type coverage
 - Expand and collapse folders on click
 - File selection with a clear selected state

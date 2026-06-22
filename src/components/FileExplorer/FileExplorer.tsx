@@ -19,7 +19,6 @@ import { VaultContextMenu } from "./VaultContextMenu";
 type FileExplorerProps = {
   nodes: SecureVaultNode[];
   selectedNode: SecureVaultNode | null;
-  importDestinationLabel: string;
   hasClipboard: boolean;
   onImportToVault: () => void;
   onNodeSelect: (node: SecureVaultNode, pathSegments: string[]) => void;
@@ -93,7 +92,6 @@ function getVisibleIndex(items: VisibleTreeItem[], focusedId: string | null) {
 export function FileExplorer({
   nodes,
   selectedNode,
-  importDestinationLabel,
   hasClipboard,
   onImportToVault,
   onNodeSelect,
@@ -419,9 +417,6 @@ export function FileExplorer({
           <h2>Vault records</h2>
         </div>
         <div className="explorer-toolbar">
-          <span className="destination-chip" title={`Import destination: ${importDestinationLabel}`}>
-            {importDestinationLabel}
-          </span>
           <button className="import-button" type="button" onClick={onImportToVault}>
             Import to Vault
           </button>
