@@ -10,7 +10,7 @@ import {
 type PropertiesPanelProps = {
   selectedNode: SecureVaultNode | null;
   pathSegments: string[];
-  onRenameFile: (fileId: string, nextName: string) => void;
+  onRenameNode: (nodeId: string, nextName: string) => void;
   onMoveToTrash: () => void;
   onDeletePermanently: () => void;
 };
@@ -18,7 +18,7 @@ type PropertiesPanelProps = {
 export function PropertiesPanel({
   selectedNode,
   pathSegments,
-  onRenameFile,
+  onRenameNode,
   onMoveToTrash,
   onDeletePermanently,
 }: PropertiesPanelProps) {
@@ -48,23 +48,20 @@ export function PropertiesPanel({
   const fullPath = formatFullPath(pathSegments);
   const selectedFile = isFile(selectedNode) ? selectedNode : null;
   const selectedFolder = isFolder(selectedNode) ? selectedNode : null;
+  const selectedNodeKind = selectedFolder ? "folder" : "file";
 
   const handleRenameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!selectedFile) {
-      return;
-    }
-
     const nextName = draftName.trim();
 
-    if (!nextName || nextName === selectedFile.name) {
+    if (!nextName || nextName === selectedNode.name) {
       setIsRenaming(false);
-      setDraftName(selectedFile.name);
+      setDraftName(selectedNode.name);
       return;
     }
 
-    onRenameFile(selectedFile.id, nextName);
+    onRenameNode(selectedNode.id, nextName);
     setIsRenaming(false);
   };
 
@@ -107,53 +104,59 @@ export function PropertiesPanel({
         </div>
       </dl>
 
-      {selectedFile ? (
-        <div className="file-action-stack" aria-label="File actions">
-          <div className="rename-card">
-            <div>
-              <p className="action-title">Edit file name</p>
-              <p className="action-note">Updates the frontend vault tree and internal path.</p>
-            </div>
-            {isRenaming ? (
-              <form className="rename-form" onSubmit={handleRenameSubmit}>
-                <label className="sr-only" htmlFor="rename-file-input">
-                  New file name
-                </label>
-                <input
-                  id="rename-file-input"
-                  value={draftName}
-                  onChange={(event) => setDraftName(event.target.value)}
-                  autoFocus
-                />
-                <div className="rename-actions">
-                  <button type="submit">Save</button>
-                  <button
-                    type="button"
-                    className="secondary-action"
-                    onClick={() => {
-                      setIsRenaming(false);
-                      setDraftName(selectedFile.name);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
-                Rename file
-              </button>
-            )}
+      <div className="file-action-stack" aria-label={`${selectedNodeKind} actions`}>
+        <div className="rename-card">
+          <div>
+            <p className="action-title">Edit {selectedNodeKind} name</p>
+            <p className="action-note">Updates the frontend vault tree and internal path.</p>
           </div>
-
-          <button className="vault-action-button" type="button" onClick={onMoveToTrash}>
-            Move to Trash
-          </button>
-          <button className="vault-action-button vault-action-button--danger" type="button" onClick={onDeletePermanently}>
-            Delete Permanently
-          </button>
+          {isRenaming ? (
+            <form className="rename-form" onSubmit={handleRenameSubmit}>
+              <label className="sr-only" htmlFor="rename-node-inline-input">
+                New {selectedNodeKind} name
+              </label>
+              <input
+                id="rename-node-inline-input"
+                value={draftName}
+                onChange={(event) => setDraftName(event.target.value)}
+                autoFocus
+              />
+              <div className="rename-actions">
+                <button type="submit">Save</button>
+                <button
+                  type="button"
+                  className="secondary-action"
+                  onClick={() => {
+                    setIsRenaming(false);
+                    setDraftName(selectedNode.name);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
+              Rename {selectedNodeKind}
+            </button>
+          )}
         </div>
-      ) : null}
+
+        {selectedFile ? (
+          <div className="rename-card">
+            <button className="vault-action-button" type="button" onClick={onMoveToTrash}>
+              Move to Trash
+            </button>
+            <button
+              className="vault-action-button vault-action-button--danger"
+              type="button"
+              onClick={onDeletePermanently}
+            >
+              Delete Permanently
+            </button>
+          </div>
+        ) : null}
+      </div>
     </aside>
   );
 }

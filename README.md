@@ -79,6 +79,7 @@ The app uses the provided `data.json` structure exactly: every node keeps its `i
 - Breadcrumb path bar for the selected file
 - Copy path button with a "Path copied" confirmation
 - Frontend-only Import to Vault, rename, Move to Trash, Restore, and Delete Permanently actions
+- Custom right-click Vault Context Actions for copy, paste, rename, path copy, and destination selection
 - Folder selection for choosing an import destination
 - Custom confirmation modals and toast notifications without external libraries
 - Top-right theme toggle with dark mode as the default product theme
@@ -127,6 +128,12 @@ The Vault File Actions feature is intentionally frontend-only. `Import to Vault`
 Browsers do not expose the user's real local computer path for security reasons, so the app never attempts to read paths like `C:/Users/...`. Instead, SecureVault generates its own internal vault path based on the selected folder. For example, importing `NDA-final.pdf` into `SecureVault / Legal Cases / 2026 / Contracts` creates the internal path `/SecureVault/Legal Cases/2026/Contracts/NDA-final.pdf`.
 
 Move to Trash, Restore, Rename, and Delete Permanently are also simulated with React state. Moved files are removed from the active tree and stored in a Trash panel with their original internal path so they can be restored. Permanent deletion removes the file from the frontend demo state. In production, these actions would connect to a secure backend API, authorization checks, audit logging, durable object storage, and a database.
+
+## Vault Context Actions
+
+Vault Context Actions add a custom right-click menu to files and folders without using the browser's default context menu. File actions include Copy, Rename, Copy Path, Move to Trash, and Delete Permanently. Folder actions include Copy Folder, Paste Here, Rename Folder, Copy Path, and Set as Import Destination.
+
+Copy, paste, rename, and path recalculation are frontend-only simulations of real file explorer behavior. Copied files or folders are kept in temporary React state, and Paste Here duplicates the copied item into the target folder with new unique IDs for the pasted node and every nested child. The app does not store physical file-system paths; it recalculates SecureVault internal paths from the current recursive tree, so renamed folders and pasted folder children automatically resolve to their new vault location.
 
 ## Project Structure
 

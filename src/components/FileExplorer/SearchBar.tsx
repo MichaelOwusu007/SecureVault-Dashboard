@@ -1,10 +1,20 @@
+import { KeyboardEvent } from "react";
+
 type SearchBarProps = {
   value: string;
   onChange: (value: string) => void;
+  onEnter: () => void;
   resultCount: number;
 };
 
-export function SearchBar({ value, onChange, resultCount }: SearchBarProps) {
+export function SearchBar({ value, onChange, onEnter, resultCount }: SearchBarProps) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onEnter();
+    }
+  };
+
   return (
     <div className="search-bar">
       <label className="sr-only" htmlFor="vault-search">
@@ -16,6 +26,7 @@ export function SearchBar({ value, onChange, resultCount }: SearchBarProps) {
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder="Search files, folders, evidence..."
         autoComplete="off"
         aria-controls="securevault-folder-tree"

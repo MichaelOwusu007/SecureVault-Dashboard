@@ -4,14 +4,18 @@ import { BreadcrumbBar } from "./components/FileExplorer/BreadcrumbBar";
 import { ConfirmationModal } from "./components/FileExplorer/ConfirmationModal";
 import { FileExplorer } from "./components/FileExplorer/FileExplorer";
 import { PropertiesPanel } from "./components/FileExplorer/PropertiesPanel";
+import { RenameNodeModal } from "./components/FileExplorer/RenameNodeModal";
 import { ToastContainer, ToastMessage } from "./components/FileExplorer/ToastContainer";
 import { TrashPanel } from "./components/FileExplorer/TrashPanel";
 import {
   FileNode,
+  FolderNode,
   SecureVaultNode,
   TrashedFileItem,
   addNodeToFolder,
+  collectNodeIds,
   countNodes,
+  duplicateNodeWithFreshIds,
   findNodePath,
   formatFullPath,
   formatStorage,
@@ -19,7 +23,7 @@ import {
   isFile,
   isFolder,
   removeFileById,
-  renameFileById,
+  renameNodeById,
 } from "./utils/treeUtils";
 
 const initialNodes = vaultData as SecureVaultNode[];
@@ -27,6 +31,15 @@ const initialNodes = vaultData as SecureVaultNode[];
 type SelectedNodeState = {
   node: SecureVaultNode;
   pathSegments: string[];
+};
+
+type VaultClipboardItem = {
+  node: SecureVaultNode;
+  pathSegments: string[];
+};
+
+type PendingRename = {
+  node: SecureVaultNode;
 };
 
 type PendingConfirmation =
@@ -54,13 +67,31 @@ function getInitialThemeMode(): ThemeMode {
   }
 }
 
+async function writeTextToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+  }
+}
+
 export default function App() {
   const [vaultNodes, setVaultNodes] = useState<SecureVaultNode[]>(() => initialNodes);
   const [selectedItem, setSelectedItem] = useState<SelectedNodeState | null>(null);
+  const [vaultClipboard, setVaultClipboard] = useState<VaultClipboardItem | null>(null);
   const [pathCopied, setPathCopied] = useState(false);
   const [trashItems, setTrashItems] = useState<TrashedFileItem[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
+  const [pendingRename, setPendingRename] = useState<PendingRename | null>(null);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedNode = selectedItem?.node ?? null;
@@ -137,30 +168,66 @@ export default function App() {
     setPathCopied(false);
   };
 
-  const handleCopyPath = async () => {
+  const handleCopyVaultPath = async (pathSegments: string[]) => {
+    await writeTextToClipboard(formatFullPath(pathSegments));
+    setPathCopied(true);
+    showToast("Path copied.");
+    window.setTimeout(() => setPathCopied(false), 1800);
+  };
+
+  const handleCopyPath = () => {
     if (!selectedItem) {
       return;
     }
 
-    const path = formatFullPath(selectedPathSegments);
+    void handleCopyVaultPath(selectedPathSegments);
+  };
 
-    try {
-      await navigator.clipboard.writeText(path);
-    } catch {
-      const textArea = document.createElement("textarea");
-      textArea.value = path;
-      textArea.setAttribute("readonly", "");
-      textArea.style.position = "fixed";
-      textArea.style.opacity = "0";
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
+  const handleCopyNodePath = (_node: SecureVaultNode, pathSegments: string[]) => {
+    void handleCopyVaultPath(pathSegments);
+  };
+
+  const handleCopyNode = (node: SecureVaultNode, pathSegments: string[]) => {
+    setVaultClipboard({ node, pathSegments });
+    showToast(`${isFolder(node) ? "Folder" : "File"} copied.`);
+  };
+
+  const handlePasteIntoFolder = (folder: FolderNode, pathSegments: string[]) => {
+    if (!vaultClipboard) {
+      return;
     }
 
-    setPathCopied(true);
-    showToast("Path copied.");
-    window.setTimeout(() => setPathCopied(false), 1800);
+    const duplicatedNode = duplicateNodeWithFreshIds(vaultClipboard.node, collectNodeIds(vaultNodes));
+    const result = addNodeToFolder(vaultNodes, folder.id, duplicatedNode);
+    const pastedPathSegments = [...pathSegments, result.addedNode.name];
+
+    setVaultNodes(result.nodes);
+    setSelectedItem({ node: result.addedNode, pathSegments: pastedPathSegments });
+    setPathCopied(false);
+    showToast(`${isFolder(result.addedNode) ? "Folder" : "File"} pasted into ${folder.name}.`);
+  };
+
+  const requestRenameNode = (node: SecureVaultNode) => {
+    setPendingRename({ node });
+  };
+
+  const handleRenameNode = (nodeId: string, nextName: string) => {
+    const trimmedName = nextName.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    const renameResult = renameNodeById(vaultNodes, nodeId, trimmedName);
+
+    if (!renameResult.renamedNode || !renameResult.pathSegments) {
+      return;
+    }
+
+    setVaultNodes(renameResult.nodes);
+    setSelectedItem({ node: renameResult.renamedNode, pathSegments: renameResult.pathSegments });
+    setPathCopied(false);
+    showToast(`${isFolder(renameResult.renamedNode) ? "Folder" : "File"} renamed.`);
   };
 
   const handleImportToVault = () => {
@@ -198,23 +265,8 @@ export default function App() {
     showToast("File imported successfully.");
   };
 
-  const handleRenameFile = (fileId: string, nextName: string) => {
-    const trimmedName = nextName.trim();
-
-    if (!trimmedName) {
-      return;
-    }
-
-    const renameResult = renameFileById(vaultNodes, fileId, trimmedName);
-
-    if (!renameResult.renamedFile || !renameResult.pathSegments) {
-      return;
-    }
-
-    setVaultNodes(renameResult.nodes);
-    setSelectedItem({ node: renameResult.renamedFile, pathSegments: renameResult.pathSegments });
-    setPathCopied(false);
-    showToast("File name updated.");
+  const requestMoveFileToTrash = (fileId: string) => {
+    setPendingConfirmation({ type: "move-to-trash", fileId });
   };
 
   const moveSelectedFileToTrash = () => {
@@ -222,7 +274,11 @@ export default function App() {
       return;
     }
 
-    setPendingConfirmation({ type: "move-to-trash", fileId: selectedFile.id });
+    requestMoveFileToTrash(selectedFile.id);
+  };
+
+  const requestDeleteFilePermanently = (fileId: string) => {
+    setPendingConfirmation({ type: "delete-vault-file", fileId });
   };
 
   const deleteSelectedFilePermanently = () => {
@@ -230,7 +286,19 @@ export default function App() {
       return;
     }
 
-    setPendingConfirmation({ type: "delete-vault-file", fileId: selectedFile.id });
+    requestDeleteFilePermanently(selectedFile.id);
+  };
+
+  const handleContextMoveFileToTrash = (node: SecureVaultNode) => {
+    if (isFile(node)) {
+      requestMoveFileToTrash(node.id);
+    }
+  };
+
+  const handleContextDeleteFilePermanently = (node: SecureVaultNode) => {
+    if (isFile(node)) {
+      requestDeleteFilePermanently(node.id);
+    }
   };
 
   const restoreTrashItem = (trashId: string) => {
@@ -443,14 +511,21 @@ export default function App() {
             nodes={vaultNodes}
             selectedNode={selectedNode}
             importDestinationLabel={importDestinationLabel}
+            hasClipboard={Boolean(vaultClipboard)}
             onImportToVault={handleImportToVault}
             onNodeSelect={handleNodeSelect}
+            onCopyNode={handleCopyNode}
+            onPasteIntoFolder={handlePasteIntoFolder}
+            onRequestRename={requestRenameNode}
+            onCopyNodePath={handleCopyNodePath}
+            onMoveFileToTrash={handleContextMoveFileToTrash}
+            onDeleteFilePermanently={handleContextDeleteFilePermanently}
           />
           <div className="side-panel-stack">
             <PropertiesPanel
               selectedNode={selectedNode}
               pathSegments={selectedPathSegments}
-              onRenameFile={handleRenameFile}
+              onRenameNode={handleRenameNode}
               onMoveToTrash={moveSelectedFileToTrash}
               onDeletePermanently={deleteSelectedFilePermanently}
             />
@@ -471,6 +546,18 @@ export default function App() {
           tone={pendingModalContent.tone as "warning" | "danger"}
           onConfirm={handleConfirmPendingAction}
           onCancel={() => setPendingConfirmation(null)}
+        />
+      ) : null}
+
+      {pendingRename ? (
+        <RenameNodeModal
+          nodeName={pendingRename.node.name}
+          nodeType={pendingRename.node.type}
+          onConfirm={(nextName) => {
+            handleRenameNode(pendingRename.node.id, nextName);
+            setPendingRename(null);
+          }}
+          onCancel={() => setPendingRename(null)}
         />
       ) : null}
 

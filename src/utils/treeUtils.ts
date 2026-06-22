@@ -37,9 +37,9 @@ export type RemovedFileResult = {
   parentIds: string[];
 };
 
-export type RenameFileResult = {
+export type RenameNodeResult = {
   nodes: SecureVaultNode[];
-  renamedFile: FileNode | null;
+  renamedNode: SecureVaultNode | null;
   pathSegments: string[] | null;
   parentIds: string[];
 };
@@ -274,38 +274,38 @@ export function removeFileById(
   return null;
 }
 
-export function renameFileById(
+export function renameNodeById(
   nodes: SecureVaultNode[],
-  fileId: string,
+  nodeId: string,
   requestedName: string,
   pathSegments: string[] = [],
   parentIds: string[] = [],
-): RenameFileResult {
-  let renamedFile: FileNode | null = null;
+): RenameNodeResult {
+  let renamedNode: SecureVaultNode | null = null;
   let renamedPathSegments: string[] | null = null;
   let renamedParentIds: string[] = [];
 
   const nextNodes = nodes.map((node) => {
-    if (isFile(node) && node.id === fileId) {
-      const siblingNodes = nodes.filter((sibling) => sibling.id !== fileId);
+    if (node.id === nodeId) {
+      const siblingNodes = nodes.filter((sibling) => sibling.id !== nodeId);
       const uniqueName = getUniqueNodeName(siblingNodes, requestedName);
-      renamedFile = { ...node, name: uniqueName };
+      renamedNode = { ...node, name: uniqueName };
       renamedPathSegments = [...pathSegments, uniqueName];
       renamedParentIds = parentIds;
-      return renamedFile;
+      return renamedNode;
     }
 
     if (isFolder(node)) {
-      const childResult = renameFileById(
+      const childResult = renameNodeById(
         node.children,
-        fileId,
+        nodeId,
         requestedName,
         [...pathSegments, node.name],
         [...parentIds, node.id],
       );
 
-      if (childResult.renamedFile) {
-        renamedFile = childResult.renamedFile;
+      if (childResult.renamedNode) {
+        renamedNode = childResult.renamedNode;
         renamedPathSegments = childResult.pathSegments;
         renamedParentIds = childResult.parentIds;
         return { ...node, children: childResult.nodes };
@@ -317,14 +317,27 @@ export function renameFileById(
 
   return {
     nodes: nextNodes,
-    renamedFile,
+    renamedNode,
     pathSegments: renamedPathSegments,
     parentIds: renamedParentIds,
   };
 }
 
-export function getTopLevelFolderIds(nodes: SecureVaultNode[]): Set<string> {
-  return new Set(nodes.filter(isFolder).map((node) => node.id));
+export function collectNodeIds(nodes: SecureVaultNode[]): Set<string> {
+  const nodeIds = new Set<string>();
+
+  function walk(items: SecureVaultNode[]) {
+    items.forEach((item) => {
+      nodeIds.add(item.id);
+
+      if (isFolder(item)) {
+        walk(item.children);
+      }
+    });
+  }
+
+  walk(nodes);
+  return nodeIds;
 }
 
 export function collectFolderIds(nodes: SecureVaultNode[]): Set<string> {
@@ -341,6 +354,60 @@ export function collectFolderIds(nodes: SecureVaultNode[]): Set<string> {
 
   walk(nodes);
   return folderIds;
+}
+
+export function collectExpandableFolderIds(nodes: SecureVaultNode[]): Set<string> {
+  const folderIds = new Set<string>();
+
+  function walk(items: SecureVaultNode[]) {
+    items.forEach((item) => {
+      if (isFolder(item)) {
+        if (item.children.length > 0) {
+          folderIds.add(item.id);
+        }
+
+        walk(item.children);
+      }
+    });
+  }
+
+  walk(nodes);
+  return folderIds;
+}
+
+export function duplicateNodeWithFreshIds(
+  node: SecureVaultNode,
+  existingIds: Set<string> = new Set<string>(),
+): SecureVaultNode {
+  const usedIds = new Set(existingIds);
+
+  function createNodeId(type: SecureVaultNode["type"]) {
+    let nextId = "";
+
+    do {
+      nextId = `${type}_copy_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    } while (usedIds.has(nextId));
+
+    usedIds.add(nextId);
+    return nextId;
+  }
+
+  function duplicate(item: SecureVaultNode): SecureVaultNode {
+    if (isFolder(item)) {
+      return {
+        ...item,
+        id: createNodeId(item.type),
+        children: item.children.map(duplicate),
+      };
+    }
+
+    return {
+      ...item,
+      id: createNodeId(item.type),
+    };
+  }
+
+  return duplicate(node);
 }
 
 export function flattenVisibleTree(
@@ -395,7 +462,11 @@ export function findNodePath(
   return null;
 }
 
-export function filterTreeByQuery(nodes: SecureVaultNode[], query: string): SecureVaultNode[] {
+export function filterTreeByQuery(
+  nodes: SecureVaultNode[],
+  query: string,
+  openedFolderId: string | null = null,
+): SecureVaultNode[] {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
@@ -409,13 +480,13 @@ export function filterTreeByQuery(nodes: SecureVaultNode[], query: string): Secu
       return nameMatches ? [...matches, node] : matches;
     }
 
-    const matchingChildren = filterTreeByQuery(node.children, normalizedQuery);
+    const matchingChildren = filterTreeByQuery(node.children, normalizedQuery, openedFolderId);
 
-    if (nameMatches) {
+    if (node.id === openedFolderId && nameMatches) {
       return [...matches, node];
     }
 
-    if (matchingChildren.length > 0) {
+    if (nameMatches || matchingChildren.length > 0) {
       return [...matches, { ...node, children: matchingChildren }];
     }
 

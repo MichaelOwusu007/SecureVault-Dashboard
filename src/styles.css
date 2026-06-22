@@ -827,6 +827,88 @@ h3 {
   box-shadow: 0 0 18px rgba(255, 209, 102, 0.22);
 }
 
+.vault-context-menu {
+  position: fixed;
+  z-index: 120;
+  display: grid;
+  width: 230px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(88, 166, 255, 0.12), transparent 48%),
+    rgba(10, 17, 19, 0.98);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.48);
+}
+
+.vault-context-menu__target {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.vault-context-menu__target span {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.vault-context-menu__target strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-context-menu__actions {
+  display: grid;
+  padding: 5px;
+}
+
+.vault-context-menu__actions button {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--muted-strong);
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.vault-context-menu__actions button:hover,
+.vault-context-menu__actions button:focus-visible {
+  background: rgba(0, 230, 176, 0.12);
+  color: var(--text);
+  outline: none;
+}
+
+.vault-context-menu__actions button:disabled {
+  color: rgba(147, 169, 170, 0.46);
+  cursor: not-allowed;
+}
+
+.vault-context-menu__actions button:disabled:hover {
+  background: transparent;
+  color: rgba(147, 169, 170, 0.46);
+}
+
+.vault-context-menu__actions button.is-danger {
+  color: #ffb1bf;
+}
+
+.vault-context-menu__actions button.is-danger:hover,
+.vault-context-menu__actions button.is-danger:focus-visible {
+  background: rgba(255, 92, 122, 0.14);
+  color: #ffd4dc;
+}
+
 .tree-disclosure {
   display: grid;
   width: 16px;
@@ -1303,6 +1385,45 @@ h3 {
   color: var(--muted-strong);
 }
 
+.rename-node-modal {
+  width: min(420px, 100%);
+}
+
+.rename-modal-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rename-modal-form label {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.rename-modal-form input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0 var(--space-3);
+  background: #0a1113;
+  color: var(--text);
+  outline: none;
+}
+
+.rename-modal-form input:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px rgba(0, 230, 176, 0.1);
+}
+
+.rename-modal-form__error {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: #ffb1bf;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .modal-signal {
   width: 42px;
   height: 4px;
@@ -1397,7 +1518,8 @@ h3 {
 
 [data-theme="light"] .command-help--floating,
 [data-theme="light"] .toast-card,
-[data-theme="light"] .confirmation-modal {
+[data-theme="light"] .confirmation-modal,
+[data-theme="light"] .vault-context-menu {
   background:
     linear-gradient(145deg, rgba(0, 125, 102, 0.08), transparent 44%),
     rgba(255, 255, 255, 0.96);
@@ -1417,7 +1539,8 @@ h3 {
 }
 
 [data-theme="light"] .search-bar input,
-[data-theme="light"] .rename-form input {
+[data-theme="light"] .rename-form input,
+[data-theme="light"] .rename-modal-form input {
   background: #ffffff;
 }
 
@@ -1489,6 +1612,27 @@ h3 {
 
 [data-theme="light"] .tree-row.is-destination {
   background: linear-gradient(90deg, rgba(166, 99, 0, 0.12), rgba(0, 125, 102, 0.06));
+}
+
+[data-theme="light"] .vault-context-menu__actions button:hover,
+[data-theme="light"] .vault-context-menu__actions button:focus-visible {
+  background: rgba(0, 125, 102, 0.1);
+  color: #06382f;
+}
+
+[data-theme="light"] .vault-context-menu__actions button:disabled:hover {
+  background: transparent;
+  color: rgba(102, 122, 120, 0.52);
+}
+
+[data-theme="light"] .vault-context-menu__actions button.is-danger {
+  color: #9f1239;
+}
+
+[data-theme="light"] .vault-context-menu__actions button.is-danger:hover,
+[data-theme="light"] .vault-context-menu__actions button.is-danger:focus-visible {
+  background: rgba(192, 38, 74, 0.1);
+  color: #7f1233;
 }
 
 [data-theme="light"] .node-icon:not(.node-icon--folder) {

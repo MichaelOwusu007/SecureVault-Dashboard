@@ -1,4 +1,4 @@
-import { KeyboardEvent, RefCallback } from "react";
+import { KeyboardEvent, MouseEvent, RefCallback } from "react";
 import { SecureVaultNode, getNodeIconMeta, isFolder, isFile } from "../../utils/treeUtils";
 
 type TreeNodeProps = {
@@ -15,6 +15,7 @@ type TreeNodeProps = {
   onFolderToggle: (nodeId: string) => void;
   onFocusItem: (nodeId: string) => void;
   onNodeSelect: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onOpenContextMenu: (node: SecureVaultNode, pathSegments: string[], position: { x: number; y: number }) => void;
 };
 
 function renderHighlightedName(name: string, query: string) {
@@ -57,6 +58,7 @@ export function TreeNode({
   onFolderToggle,
   onFocusItem,
   onNodeSelect,
+  onOpenContextMenu,
 }: TreeNodeProps) {
   const folder = isFolder(node);
   const file = isFile(node);
@@ -84,6 +86,14 @@ export function TreeNode({
     }
   };
 
+  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onFocusItem(node.id);
+    onNodeSelect(node, currentPath);
+    onOpenContextMenu(node, currentPath, { x: event.clientX, y: event.clientY });
+  };
+
   return (
     <>
       <div
@@ -99,6 +109,7 @@ export function TreeNode({
         data-node-id={node.id}
         data-node-type={node.type}
         onClick={handleClick}
+        onContextMenu={handleContextMenu}
         onFocus={() => onFocusItem(node.id)}
         onKeyDown={handleKeyDown}
         style={{ paddingLeft: `${12 + (depth - 1) * 20}px` }}
@@ -131,6 +142,7 @@ export function TreeNode({
               onFolderToggle={onFolderToggle}
               onFocusItem={onFocusItem}
               onNodeSelect={onNodeSelect}
+              onOpenContextMenu={onOpenContextMenu}
             />
           ))}
         </div>

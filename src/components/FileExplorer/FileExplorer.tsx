@@ -1,8 +1,9 @@
 import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FileNode,
+  FolderNode,
   SecureVaultNode,
   VisibleTreeItem,
+  collectExpandableFolderIds,
   collectFolderIds,
   filterTreeByQuery,
   findNodePath,
@@ -13,16 +14,31 @@ import {
 import { EmptyState } from "./EmptyState";
 import { SearchBar } from "./SearchBar";
 import { TreeNode } from "./TreeNode";
+import { VaultContextMenu } from "./VaultContextMenu";
 
 type FileExplorerProps = {
   nodes: SecureVaultNode[];
   selectedNode: SecureVaultNode | null;
   importDestinationLabel: string;
+  hasClipboard: boolean;
   onImportToVault: () => void;
   onNodeSelect: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onCopyNode: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onPasteIntoFolder: (folder: FolderNode, pathSegments: string[]) => void;
+  onRequestRename: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onCopyNodePath: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onMoveFileToTrash: (node: SecureVaultNode, pathSegments: string[]) => void;
+  onDeleteFilePermanently: (node: SecureVaultNode, pathSegments: string[]) => void;
 };
 
 type ExplorerCommand = "previous" | "next" | "expand" | "collapse" | "select";
+
+type ContextMenuState = {
+  node: SecureVaultNode;
+  pathSegments: string[];
+  x: number;
+  y: number;
+};
 
 const EXPANDED_FOLDERS_STORAGE_KEY = "securevault-expanded-folder-ids";
 
@@ -78,13 +94,22 @@ export function FileExplorer({
   nodes,
   selectedNode,
   importDestinationLabel,
+  hasClipboard,
   onImportToVault,
   onNodeSelect,
+  onCopyNode,
+  onPasteIntoFolder,
+  onRequestRename,
+  onCopyNodePath,
+  onMoveFileToTrash,
+  onDeleteFilePermanently,
 }: FileExplorerProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => getInitialExpandedIds(nodes));
   const [focusedId, setFocusedId] = useState<string | null>(() => nodes[0]?.id ?? null);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [openedSearchFolderId, setOpenedSearchFolderId] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const itemRefs = useRef(new Map<string, HTMLDivElement>());
   const shouldMoveFocusRef = useRef(false);
 
@@ -104,11 +129,46 @@ export function FileExplorer({
     return () => window.clearTimeout(timeoutId);
   }, [searchInput]);
 
+  useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
+
+    const closeContextMenu = () => setContextMenu(null);
+    const closeContextMenuFromKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeContextMenu();
+      }
+    };
+
+    window.addEventListener("click", closeContextMenu);
+    window.addEventListener("resize", closeContextMenu);
+    window.addEventListener("scroll", closeContextMenu, true);
+    window.addEventListener("keydown", closeContextMenuFromKey);
+
+    return () => {
+      window.removeEventListener("click", closeContextMenu);
+      window.removeEventListener("resize", closeContextMenu);
+      window.removeEventListener("scroll", closeContextMenu, true);
+      window.removeEventListener("keydown", closeContextMenuFromKey);
+    };
+  }, [contextMenu]);
+
   const filteredNodes = useMemo(
-    () => filterTreeByQuery(nodes, debouncedSearchQuery),
-    [nodes, debouncedSearchQuery],
+    () => filterTreeByQuery(nodes, debouncedSearchQuery, openedSearchFolderId),
+    [nodes, debouncedSearchQuery, openedSearchFolderId],
   );
-  const searchableFolderIds = useMemo(() => collectFolderIds(filteredNodes), [filteredNodes]);
+  const searchableFolderIds = useMemo(() => {
+    if (openedSearchFolderId && debouncedSearchQuery.trim()) {
+      const openedFolderPath = findNodePath(filteredNodes, openedSearchFolderId);
+
+      if (openedFolderPath) {
+        return new Set([...openedFolderPath.parentIds, openedSearchFolderId]);
+      }
+    }
+
+    return collectExpandableFolderIds(filteredNodes);
+  }, [debouncedSearchQuery, filteredNodes, openedSearchFolderId]);
 
   const effectiveExpandedIds = useMemo(() => {
     if (!debouncedSearchQuery.trim()) {
@@ -173,6 +233,11 @@ export function FileExplorer({
     });
   }, []);
 
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    setOpenedSearchFolderId(null);
+  }, []);
+
   const toggleFolder = useCallback((nodeId: string) => {
     setExpandedIds((currentExpandedIds) => {
       const nextExpandedIds = new Set(currentExpandedIds);
@@ -191,6 +256,14 @@ export function FileExplorer({
     setExpandedIds((currentExpandedIds) => new Set(currentExpandedIds).add(nodeId));
   }, []);
 
+  const expandFolderPath = useCallback((nodeIds: string[]) => {
+    setExpandedIds((currentExpandedIds) => {
+      const nextExpandedIds = new Set(currentExpandedIds);
+      nodeIds.forEach((nodeId) => nextExpandedIds.add(nodeId));
+      return nextExpandedIds;
+    });
+  }, []);
+
   const collapseFolder = useCallback((nodeId: string) => {
     setExpandedIds((currentExpandedIds) => {
       const nextExpandedIds = new Set(currentExpandedIds);
@@ -198,6 +271,45 @@ export function FileExplorer({
       return nextExpandedIds;
     });
   }, []);
+
+  const openContextMenu = useCallback(
+    (node: SecureVaultNode, pathSegments: string[], position: { x: number; y: number }) => {
+      setContextMenu({ node, pathSegments, ...position });
+    },
+    [],
+  );
+
+  const pasteIntoContextFolder = useCallback(
+    (folder: FolderNode, pathSegments: string[]) => {
+      expandFolder(folder.id);
+      onPasteIntoFolder(folder, pathSegments);
+    },
+    [expandFolder, onPasteIntoFolder],
+  );
+
+  const openVisibleItem = useCallback(
+    (item: VisibleTreeItem) => {
+      const pathResult = findNodePath(nodes, item.node.id);
+      const selectedNode = pathResult?.node ?? item.node;
+      const selectedPathSegments = pathResult?.pathSegments ?? item.pathSegments;
+      const parentIds = pathResult?.parentIds ?? [];
+
+      onNodeSelect(selectedNode, selectedPathSegments);
+
+      if (isFolder(selectedNode)) {
+        expandFolderPath([...parentIds, selectedNode.id]);
+        setOpenedSearchFolderId(searchInput.trim() || debouncedSearchQuery.trim() ? selectedNode.id : null);
+      } else if (parentIds.length > 0) {
+        expandFolderPath(parentIds);
+        setOpenedSearchFolderId(null);
+      } else {
+        setOpenedSearchFolderId(null);
+      }
+
+      focusTreeItem(selectedNode.id);
+    },
+    [debouncedSearchQuery, expandFolderPath, focusTreeItem, nodes, onNodeSelect, searchInput],
+  );
 
   const runExplorerCommand = useCallback(
     (command: ExplorerCommand) => {
@@ -240,9 +352,7 @@ export function FileExplorer({
       }
 
       if (command === "select") {
-        const pathResult = findNodePath(nodes, currentNode.id);
-        onNodeSelect(currentNode, pathResult?.pathSegments ?? currentItem.pathSegments);
-        focusTreeItem(currentNode.id);
+        openVisibleItem(currentItem);
       }
     },
     [
@@ -251,11 +361,24 @@ export function FileExplorer({
       expandFolder,
       focusTreeItem,
       focusedId,
-      nodes,
-      onNodeSelect,
+      openVisibleItem,
       visibleItems,
     ],
   );
+
+  const handleSearchEnter = useCallback(() => {
+    const normalizedSearch = searchInput.trim().toLowerCase();
+    const matchingItem = normalizedSearch
+      ? visibleItems.find((item) => item.node.name.toLowerCase().includes(normalizedSearch))
+      : null;
+
+    if (matchingItem) {
+      openVisibleItem(matchingItem);
+      return;
+    }
+
+    runExplorerCommand("select");
+  }, [openVisibleItem, runExplorerCommand, searchInput, visibleItems]);
 
   const handleKeyboardNavigation = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!visibleItems.length) {
@@ -305,7 +428,12 @@ export function FileExplorer({
         </div>
       </div>
 
-      <SearchBar value={searchInput} onChange={setSearchInput} resultCount={visibleItems.length} />
+      <SearchBar
+        value={searchInput}
+        onChange={handleSearchChange}
+        onEnter={handleSearchEnter}
+        resultCount={visibleItems.length}
+      />
 
       <div
         className="tree-shell"
@@ -313,6 +441,7 @@ export function FileExplorer({
         role="tree"
         aria-label="SecureVault folder tree"
         onKeyDown={handleKeyboardNavigation}
+        onContextMenu={(event) => event.preventDefault()}
       >
         {filteredNodes.length > 0 ? (
           filteredNodes.map((node, index) => (
@@ -331,12 +460,31 @@ export function FileExplorer({
               onFolderToggle={toggleFolder}
               onFocusItem={setFocusedId}
               onNodeSelect={onNodeSelect}
+              onOpenContextMenu={openContextMenu}
             />
           ))
         ) : (
           <EmptyState query={debouncedSearchQuery} />
         )}
       </div>
+
+      {contextMenu ? (
+        <VaultContextMenu
+          node={contextMenu.node}
+          pathSegments={contextMenu.pathSegments}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          canPaste={hasClipboard}
+          onCopyNode={onCopyNode}
+          onPasteIntoFolder={pasteIntoContextFolder}
+          onRequestRename={onRequestRename}
+          onCopyPath={onCopyNodePath}
+          onMoveFileToTrash={onMoveFileToTrash}
+          onDeleteFilePermanently={onDeleteFilePermanently}
+          onSetImportDestination={onNodeSelect}
+          onClose={() => setContextMenu(null)}
+        />
+      ) : null}
 
       <aside className="command-help command-help--floating" aria-label="Keyboard command controls">
         <div className="command-help__header">
@@ -385,10 +533,10 @@ export function FileExplorer({
             className="command-action--wide"
             onClick={() => runExplorerCommand("select")}
             disabled={!focusedNode}
-            aria-label={focusedNodeIsFile ? "Select focused file" : "Select focused folder as import destination"}
+            aria-label={focusedNodeIsFile ? "Select focused file" : "Open focused folder"}
           >
             <kbd aria-hidden="true">Enter</kbd>
-            <span>Select</span>
+            <span>{focusedNodeIsFolder ? "Open" : "Select"}</span>
           </button>
         </div>
       </aside>
