@@ -7,7 +7,6 @@ import {
   filterTreeByQuery,
   findNodePath,
   flattenVisibleTree,
-  getTopLevelFolderIds,
   isFile,
   isFolder,
 } from "../../utils/treeUtils";
@@ -25,6 +24,49 @@ type FileExplorerProps = {
 
 type ExplorerCommand = "previous" | "next" | "expand" | "collapse" | "select";
 
+const EXPANDED_FOLDERS_STORAGE_KEY = "securevault-expanded-folder-ids";
+
+function isReloadNavigation() {
+  if (typeof window === "undefined" || !("performance" in window)) {
+    return false;
+  }
+
+  const [navigationEntry] = window.performance.getEntriesByType("navigation");
+  return (navigationEntry as PerformanceNavigationTiming | undefined)?.type === "reload";
+}
+
+function getInitialExpandedIds(nodes: SecureVaultNode[]) {
+  if (typeof window === "undefined") {
+    return new Set<string>();
+  }
+
+  if (!isReloadNavigation()) {
+    try {
+      window.sessionStorage.removeItem(EXPANDED_FOLDERS_STORAGE_KEY);
+    } catch {
+      // Starting collapsed is still safe if session storage is unavailable.
+    }
+
+    return new Set<string>();
+  }
+
+  try {
+    const storedExpandedIds = window.sessionStorage.getItem(EXPANDED_FOLDERS_STORAGE_KEY);
+    const parsedExpandedIds: unknown = storedExpandedIds ? JSON.parse(storedExpandedIds) : [];
+
+    if (!Array.isArray(parsedExpandedIds)) {
+      return new Set<string>();
+    }
+
+    const folderIds = collectFolderIds(nodes);
+    return new Set(
+      parsedExpandedIds.filter((nodeId): nodeId is string => typeof nodeId === "string" && folderIds.has(nodeId)),
+    );
+  } catch {
+    return new Set<string>();
+  }
+}
+
 function getVisibleIndex(items: VisibleTreeItem[], focusedId: string | null) {
   return Math.max(
     0,
@@ -39,12 +81,20 @@ export function FileExplorer({
   onImportToVault,
   onNodeSelect,
 }: FileExplorerProps) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => getTopLevelFolderIds(nodes));
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => getInitialExpandedIds(nodes));
   const [focusedId, setFocusedId] = useState<string | null>(() => nodes[0]?.id ?? null);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const itemRefs = useRef(new Map<string, HTMLDivElement>());
   const shouldMoveFocusRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(EXPANDED_FOLDERS_STORAGE_KEY, JSON.stringify([...expandedIds]));
+    } catch {
+      // Folder expansion remains available in memory if session storage is unavailable.
+    }
+  }, [expandedIds]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
