@@ -158,12 +158,12 @@ export function PropertiesPanel({
                 </button>
               </div>
             </form>
-        ) : (
-          <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
-            Rename {selectedNodeKind}
-          </button>
-        )}
-      </div>
+          ) : (
+            <button className="secondary-action" type="button" onClick={() => setIsRenaming(true)}>
+              Rename {selectedNodeKind}
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

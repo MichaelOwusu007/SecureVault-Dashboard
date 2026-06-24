@@ -59,7 +59,7 @@ function getInitialExpandedIds(nodes: SecureVaultNode[]) {
     try {
       window.sessionStorage.removeItem(EXPANDED_FOLDERS_STORAGE_KEY);
     } catch {
-      // Starting collapsed is still safe if session storage is unavailable.
+      
     }
 
     return new Set<string>();
@@ -115,7 +115,7 @@ export function FileExplorer({
     try {
       window.sessionStorage.setItem(EXPANDED_FOLDERS_STORAGE_KEY, JSON.stringify([...expandedIds]));
     } catch {
-      // Folder expansion remains available in memory if session storage is unavailable.
+      
     }
   }, [expandedIds]);
 
