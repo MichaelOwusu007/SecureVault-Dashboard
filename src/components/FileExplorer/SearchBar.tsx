@@ -4,10 +4,9 @@ type SearchBarProps = {
   value: string;
   onChange: (value: string) => void;
   onEnter: () => void;
-  resultCount: number;
 };
 
-export function SearchBar({ value, onChange, onEnter, resultCount }: SearchBarProps) {
+export function SearchBar({ value, onChange, onEnter }: SearchBarProps) {
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -31,11 +30,6 @@ export function SearchBar({ value, onChange, onEnter, resultCount }: SearchBarPr
         autoComplete="off"
         aria-controls="securevault-folder-tree"
       />
-      {value.trim() ? (
-        <span className="search-count" aria-live="polite">
-          {resultCount} visible
-        </span>
-      ) : null}
     </div>
   );
 }

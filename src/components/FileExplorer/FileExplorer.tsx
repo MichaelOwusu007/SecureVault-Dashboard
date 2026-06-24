@@ -427,7 +427,6 @@ export function FileExplorer({
         value={searchInput}
         onChange={handleSearchChange}
         onEnter={handleSearchEnter}
-        resultCount={visibleItems.length}
       />
 
       <div
